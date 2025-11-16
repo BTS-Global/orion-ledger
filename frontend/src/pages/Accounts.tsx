@@ -57,6 +57,9 @@ export default function Accounts() {
   const [editingAccount, setEditingAccount] = useState<Account | null>(null);
   const [filterType, setFilterType] = useState<string>('all');
   const [filterCompany, setFilterCompany] = useState<string>('all');
+  const [showInitCOADialog, setShowInitCOADialog] = useState(false);
+  const [selectedCompanyForInit, setSelectedCompanyForInit] = useState<string>('');
+  const [initializingCOA, setInitializingCOA] = useState(false);
   const [formData, setFormData] = useState({
     company: '',
     account_code: '',
@@ -216,6 +219,37 @@ export default function Accounts() {
   const openNewDialog = () => {
     resetForm();
     setIsDialogOpen(true);
+  };
+
+  const handleInitializeDefaultCOA = async (companyId: string, overwrite: boolean = false) => {
+    setInitializingCOA(true);
+    try {
+      const token = csrfToken || getCsrfTokenFromCookie();
+      const response = await fetch(`${BACKEND_URL}/api/companies/${companyId}/initialize_default_coa/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': token,
+        },
+        credentials: 'include',
+        body: JSON.stringify({ overwrite }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        toast.success(data.message || 'Default chart of accounts initialized successfully');
+        fetchAccounts();
+        setShowInitCOADialog(false);
+      } else {
+        toast.error(data.message || 'Failed to initialize chart of accounts');
+      }
+    } catch (error) {
+      console.error('Error initializing COA:', error);
+      toast.error('Failed to initialize chart of accounts');
+    } finally {
+      setInitializingCOA(false);
+    }
   };
 
   const filteredAccounts = accounts.filter(account => {
