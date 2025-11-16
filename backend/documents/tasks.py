@@ -146,7 +146,12 @@ def process_csv(document):
         try:
             dialect = csv.Sniffer().sniff(csv_content[:1024])
             reader = csv.DictReader(csv_file, dialect=dialect)
-        except:
+        except (csv.Error, UnicodeDecodeError) as e:
+            logger.warning(f"Failed to detect CSV dialect: {e}. Using default CSV reader.")
+            csv_file.seek(0)
+            reader = csv.DictReader(csv_file)
+        except Exception as e:
+            logger.error(f"Unexpected error processing CSV: {e}")
             csv_file.seek(0)
             reader = csv.DictReader(csv_file)
         
@@ -165,9 +170,13 @@ def process_csv(document):
                 transaction = extract_transaction_from_row(row)
                 if transaction:
                     transactions.append(transaction)
-            except Exception as e:
+            except (ValueError, KeyError, TypeError) as e:
                 # Skip problematic rows but continue processing
-                print(f"Skipping row due to error: {e}")
+                logger.warning(f"Skipping CSV row due to parsing error: {e}. Row data: {row}")
+                continue
+            except Exception as e:
+                # Log unexpected errors but continue
+                logger.error(f"Unexpected error processing CSV row: {e}. Row data: {row}")
                 continue
     
     return {
@@ -270,7 +279,8 @@ def extract_transaction_from_row(row):
             try:
                 transaction['date'] = parse_date(row_lower[field])
                 break
-            except:
+            except (ValueError, TypeError) as e:
+                logger.debug(f"Failed to parse date from field '{field}': {row_lower[field]}. Error: {e}")
                 continue
     
     # Extract description
@@ -286,7 +296,8 @@ def extract_transaction_from_row(row):
             try:
                 amount = parse_amount(row_lower[field])
                 break
-            except:
+            except (ValueError, TypeError) as e:
+                logger.debug(f"Failed to parse amount from field '{field}': {row_lower[field]}. Error: {e}")
                 continue
     
     # Check for debit/credit columns
@@ -298,7 +309,8 @@ def extract_transaction_from_row(row):
             try:
                 debit = parse_amount(row_lower[field])
                 break
-            except:
+            except (ValueError, TypeError) as e:
+                logger.debug(f"Failed to parse debit from field '{field}': {row_lower[field]}. Error: {e}")
                 continue
     
     for field in credit_fields:
@@ -306,7 +318,8 @@ def extract_transaction_from_row(row):
             try:
                 credit = parse_amount(row_lower[field])
                 break
-            except:
+            except (ValueError, TypeError) as e:
+                logger.debug(f"Failed to parse credit from field '{field}': {row_lower[field]}. Error: {e}")
                 continue
     
     # Determine final amount
@@ -372,7 +385,8 @@ def extract_transactions_pattern_matching(text):
                 'amount': parse_amount(amount_str),
                 'confidence': 0.5  # Lower confidence for pattern matching
             })
-        except:
+        except (ValueError, TypeError) as e:
+            logger.warning(f"Failed to parse transaction from text pattern: {match}. Error: {e}")
             continue
     
     return transactions
@@ -533,7 +547,8 @@ def parse_date(date_str):
         try:
             dt = datetime.strptime(date_str, fmt)
             return dt.strftime('%Y-%m-%d')
-        except:
+        except (ValueError, TypeError):
+            # Try next format
             continue
     
     raise ValueError(f"Could not parse date: {date_str}")
@@ -555,7 +570,8 @@ def parse_amount(amount_str):
     
     try:
         return float(amount_str)
-    except:
+    except (ValueError, TypeError) as e:
+        logger.warning(f"Failed to parse amount '{amount_str}': {e}. Returning 0.0")
         return 0.0
 
 

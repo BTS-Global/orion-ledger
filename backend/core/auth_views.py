@@ -6,6 +6,9 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
 from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
 from rest_framework.authtoken.models import Token
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 @api_view(['POST'])
@@ -100,8 +103,12 @@ def logout_user(request):
     # Delete token if exists
     try:
         request.user.auth_token.delete()
-    except:
-        pass
+        logger.info(f"Token deleted for user during logout")
+    except AttributeError:
+        # User doesn't have a token (possible if using session auth only)
+        logger.debug("Logout completed without token deletion (session auth)")
+    except Exception as e:
+        logger.error(f"Error deleting token during logout: {e}")
     
     return Response({
         'message': 'Logout successful'

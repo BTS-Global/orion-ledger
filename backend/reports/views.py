@@ -10,11 +10,14 @@ from django.http import HttpResponse
 import openpyxl
 from openpyxl.styles import Font, Alignment, PatternFill
 from weasyprint import HTML
+import logging
 
 from companies.models import Company
 from transactions.accounting_service import AccountingService
 from reports.trial_balance import TrialBalanceService
 from reports.report_generator import ReportGenerator
+
+logger = logging.getLogger(__name__)
 
 
 class ReportViewSet(viewsets.ViewSet):
@@ -42,7 +45,8 @@ class ReportViewSet(viewsets.ViewSet):
             return None
         try:
             return datetime.strptime(date_str, '%Y-%m-%d').date()
-        except:
+        except (ValueError, TypeError) as e:
+            logger.warning(f"Failed to parse date '{date_str}': {e}. Expected format: YYYY-MM-DD")
             return None
     
     @action(detail=False, methods=['get'])

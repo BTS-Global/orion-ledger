@@ -50,8 +50,12 @@ def logout_view(request):
     try:
         # Delete the user's token
         request.user.auth_token.delete()
-    except:
-        pass
+        logger.info(f"User {request.user.username} logged out successfully")
+    except AttributeError:
+        # User doesn't have a token (possible if using session auth)
+        logger.debug(f"User {request.user.username} logged out without token deletion")
+    except Exception as e:
+        logger.error(f"Error deleting token for user {request.user.username}: {e}")
     
     return Response({
         'message': 'Successfully logged out'
