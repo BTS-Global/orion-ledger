@@ -13,6 +13,7 @@ import { ACCOUNT_TYPE_TOOLTIPS, ACCOUNT_CODE_TOOLTIP, DOUBLE_ENTRY_TOOLTIP } fro
 import { AIChartAnalysis } from "@/components/AIChartAnalysis";
 import { AccountHierarchyTree } from "@/components/AccountHierarchyTree";
 import { AccountSuggestions } from "@/components/AccountSuggestions";
+import { COACoverageAnalysis } from "@/components/COACoverageAnalysis";
 
 import { BACKEND_URL } from "@/config/api";;
 
@@ -352,6 +353,13 @@ export default function Accounts() {
         {companies.length > 0 && (
           <div className="mb-6">
             <AIChartAnalysis companyId={companies[0].id} />
+          </div>
+        )}
+
+        {/* Coverage Analysis */}
+        {filterCompany !== 'all' && (
+          <div className="mb-6">
+            <COACoverageAnalysis companyId={filterCompany} />
           </div>
         )}
 
