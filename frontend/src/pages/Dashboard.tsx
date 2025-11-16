@@ -1,162 +1,401 @@
-import { Button } from "@/components/ui/button";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { APP_TITLE } from "@/const";
-import { useEffect, useState } from "react";
-import { useLocation } from "wouter";
+import { Button } from "@/components/ui/button";
+import { Link } from "wouter";
+import { KPICard } from "@/components/KPICard";
+import { RevenueChart } from "@/components/RevenueChart";
+import { ExpenseBreakdown } from "@/components/ExpenseBreakdown";
+import { CashRunway } from "@/components/CashRunway";
+import {
+  DollarSign,
+  TrendingUp,
+  TrendingDown,
+  Wallet,
+  Building2,
+  FileText,
+  Receipt,
+  BarChart3,
+} from "lucide-react";
 
 import { BACKEND_URL } from "@/config/api";;
 
-interface User {
-  id: number;
-  email: string;
-  first_name: string;
-  last_name: string;
+interface Stats {
+  companies: number;
+  transactions: number;
+  documents: number;
+  accounts: number;
 }
 
-interface UserProfile {
-  full_name: string;
-  active_company: string | null;
+interface KPIData {
+  revenue: {
+    current_month: number;
+    last_month: number;
+    ytd: number;
+    change_percent: number;
+  };
+  expenses: {
+    current_month: number;
+    last_month: number;
+    ytd: number;
+    change_percent: number;
+  };
+  profit: {
+    current_month: number;
+    last_month: number;
+    ytd: number;
+    change_percent: number;
+    margin_percent: number;
+  };
+  cash_runway: {
+    current_balance: number;
+    monthly_burn_rate: number;
+    months_remaining: number;
+  };
+  top_expenses: Array<{
+    category: string;
+    amount: number;
+    percent: number;
+  }>;
+  revenue_by_month: Array<{
+    month: string;
+    amount: number;
+  }>;
+  expenses_by_month: Array<{
+    month: string;
+    amount: number;
+  }>;
 }
 
 export default function Dashboard() {
-  const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [stats, setStats] = useState<Stats>({ companies: 0, transactions: 0, documents: 0, accounts: 0 });
+  const [kpis, setKpis] = useState<KPIData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [, navigate] = useLocation();
+  const [kpisLoading, setKpisLoading] = useState(true);
+  const [companyId, setCompanyId] = useState<string | null>(null);
 
   useEffect(() => {
-    checkAuth();
+    fetchStats();
+    fetchCompanyAndKPIs();
+    
+    // Refresh stats every 30 seconds
+    const interval = setInterval(() => {
+      fetchStats();
+      fetchCompanyAndKPIs();
+    }, 30000);
+    
+    return () => clearInterval(interval);
   }, []);
 
-  const checkAuth = async () => {
+  const fetchStats = async () => {
+    setLoading(true);
     try {
-      const response = await fetch(`${BACKEND_URL}/api/auth/user/`, {
-        credentials: 'include',
-      });
+      const [companiesRes, transactionsRes, documentsRes, accountsRes] = await Promise.all([
+        fetch(`${BACKEND_URL}/api/companies/`, { credentials: 'include' }),
+        fetch(`${BACKEND_URL}/api/transactions/`, { credentials: 'include' }),
+        fetch(`${BACKEND_URL}/api/documents/`, { credentials: 'include' }),
+        fetch(`${BACKEND_URL}/api/accounts/`, { credentials: 'include' }),
+      ]);
 
-      if (response.ok) {
-        const data = await response.json();
-        setUser(data.user);
-        setProfile(data.profile);
-      } else {
-        // Not authenticated, redirect to login
-        window.location.href = '/login';
-      }
+      const companies = await companiesRes.json();
+      const transactions = await transactionsRes.json();
+      const documents = await documentsRes.json();
+      const accounts = await accountsRes.json();
+
+      setStats({
+        companies: companies.results ? companies.results.length : (companies.count || 0),
+        transactions: transactions.results ? transactions.results.length : (transactions.count || 0),
+        documents: documents.results ? documents.results.length : (documents.count || 0),
+        accounts: accounts.results ? accounts.results.length : (accounts.count || 0),
+      });
     } catch (error) {
-      console.error('Auth check failed:', error);
-      window.location.href = '/login';
+      console.error('Failed to fetch stats:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleLogout = async () => {
+  const fetchCompanyAndKPIs = async () => {
+    setKpisLoading(true);
     try {
-      await fetch(`${BACKEND_URL}/api/auth/logout/`, {
-        method: 'POST',
-        credentials: 'include',
-      });
-      window.location.href = '/login';
+      // First, get the list of companies
+      const companiesRes = await fetch(`${BACKEND_URL}/api/companies/`, { credentials: 'include' });
+      const companiesData = await companiesRes.json();
+      
+      if (companiesData.results && companiesData.results.length > 0) {
+        const firstCompany = companiesData.results[0];
+        setCompanyId(firstCompany.id);
+        
+        // Fetch KPIs for the first company
+        const kpisRes = await fetch(`${BACKEND_URL}/api/companies/${firstCompany.id}/kpis/`, {
+          credentials: 'include',
+        });
+        const kpisData = await kpisRes.json();
+        
+        if (kpisData.status === 'success') {
+          setKpis(kpisData.data);
+        }
+      }
     } catch (error) {
-      console.error('Logout failed:', error);
+      console.error('Failed to fetch KPIs:', error);
+    } finally {
+      setKpisLoading(false);
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-4 text-muted-foreground">Loading...</p>
-        </div>
-      </div>
-    );
-  }
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(value);
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-white border-b">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold">{APP_TITLE}</h1>
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-muted-foreground">
-              {user?.email}
-            </span>
-            <Button onClick={handleLogout} variant="outline">
-              Logout
-            </Button>
+      <header className="bg-white shadow-sm border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Accounting Software</h1>
+              <p className="text-sm text-gray-600">Dashboard</p>
+            </div>
           </div>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-8">
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* KPI Cards */}
+        {kpisLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            {[1, 2, 3, 4].map((i) => (
+              <Card key={i} className="animate-pulse">
+                <CardHeader className="pb-3">
+                  <div className="h-4 bg-gray-200 rounded w-1/2 mb-2"></div>
+                  <div className="h-8 bg-gray-200 rounded w-3/4"></div>
+                </CardHeader>
+              </Card>
+            ))}
+          </div>
+        ) : kpis ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <KPICard
+              title="Revenue"
+              value={formatCurrency(kpis.revenue.current_month)}
+              change={kpis.revenue.change_percent}
+              subtitle="vs last month"
+              icon={<DollarSign className="h-4 w-4" />}
+              trend="up"
+            />
+            <KPICard
+              title="Expenses"
+              value={formatCurrency(kpis.expenses.current_month)}
+              change={kpis.expenses.change_percent}
+              subtitle="vs last month"
+              icon={<TrendingDown className="h-4 w-4" />}
+              trend={kpis.expenses.change_percent > 0 ? "down" : "up"}
+            />
+            <KPICard
+              title="Profit"
+              value={formatCurrency(kpis.profit.current_month)}
+              change={kpis.profit.change_percent}
+              subtitle={`${kpis.profit.margin_percent.toFixed(1)}% margin`}
+              icon={<TrendingUp className="h-4 w-4" />}
+              trend="up"
+            />
+            <KPICard
+              title="Cash Runway"
+              value={`${kpis.cash_runway.months_remaining.toFixed(1)} months`}
+              subtitle={formatCurrency(kpis.cash_runway.current_balance)}
+              icon={<Wallet className="h-4 w-4" />}
+              trend={kpis.cash_runway.months_remaining >= 6 ? "up" : kpis.cash_runway.months_remaining >= 3 ? "neutral" : "down"}
+            />
+          </div>
+        ) : null}
+
+        {/* Charts Row */}
+        {kpis && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <RevenueChart
+              data={kpis.revenue_by_month}
+              expensesData={kpis.expenses_by_month}
+              type="line"
+            />
+            <ExpenseBreakdown data={kpis.top_expenses} />
+          </div>
+        )}
+
+        {/* Cash Runway Card */}
+        {kpis && (
+          <div className="mb-8">
+            <CashRunway
+              currentBalance={kpis.cash_runway.current_balance}
+              monthlyBurnRate={kpis.cash_runway.monthly_burn_rate}
+              monthsRemaining={kpis.cash_runway.months_remaining}
+            />
+          </div>
+        )}
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <Card>
-            <CardHeader>
-              <CardTitle>Welcome</CardTitle>
-              <CardDescription>
-                {profile?.full_name || user?.email}
+            <CardHeader className="pb-3">
+              <CardDescription className="flex items-center space-x-2">
+                <Building2 className="h-4 w-4" />
+                <span>Companies</span>
               </CardDescription>
+              <CardTitle className="text-3xl">{loading ? '...' : stats.companies}</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground">
-                You are successfully authenticated with {APP_TITLE}
-              </p>
+              <Link href="/companies">
+                <a className="text-sm text-blue-600 hover:underline">View all →</a>
+              </Link>
             </CardContent>
           </Card>
 
           <Card>
-            <CardHeader>
-              <CardTitle>Companies</CardTitle>
-              <CardDescription>Manage your companies</CardDescription>
+            <CardHeader className="pb-3">
+              <CardDescription className="flex items-center space-x-2">
+                <Receipt className="h-4 w-4" />
+                <span>Transactions</span>
+              </CardDescription>
+              <CardTitle className="text-3xl">{loading ? '...' : stats.transactions}</CardTitle>
             </CardHeader>
             <CardContent>
-              <Button className="w-full">View Companies</Button>
+              <Link href="/transactions">
+                <a className="text-sm text-blue-600 hover:underline">View all →</a>
+              </Link>
             </CardContent>
           </Card>
 
           <Card>
-            <CardHeader>
-              <CardTitle>Documents</CardTitle>
-              <CardDescription>Upload and process documents</CardDescription>
+            <CardHeader className="pb-3">
+              <CardDescription className="flex items-center space-x-2">
+                <FileText className="h-4 w-4" />
+                <span>Documents</span>
+              </CardDescription>
+              <CardTitle className="text-3xl">{loading ? '...' : stats.documents}</CardTitle>
             </CardHeader>
             <CardContent>
-              <Button className="w-full" onClick={() => navigate('/documents')}>Upload Document</Button>
+              <Link href="/documents">
+                <a className="text-sm text-blue-600 hover:underline">View all →</a>
+              </Link>
             </CardContent>
           </Card>
 
           <Card>
-            <CardHeader>
-              <CardTitle>Transactions</CardTitle>
-              <CardDescription>Review and validate transactions</CardDescription>
+            <CardHeader className="pb-3">
+              <CardDescription className="flex items-center space-x-2">
+                <BarChart3 className="h-4 w-4" />
+                <span>Chart of Accounts</span>
+              </CardDescription>
+              <CardTitle className="text-3xl">{loading ? '...' : stats.accounts}</CardTitle>
             </CardHeader>
             <CardContent>
-              <Button className="w-full" onClick={() => navigate('/transactions')}>View Transactions</Button>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Reports</CardTitle>
-              <CardDescription>Generate financial reports</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button className="w-full" onClick={() => navigate('/reports')}>Generate Report</Button>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>IRS Forms</CardTitle>
-              <CardDescription>Generate tax forms</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button className="w-full" onClick={() => navigate('/irs-forms')}>Generate Forms</Button>
+              <Link href="/accounts">
+                <a className="text-sm text-blue-600 hover:underline">View all →</a>
+              </Link>
             </CardContent>
           </Card>
         </div>
+
+        {/* Quick Actions */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Quick Actions</CardTitle>
+            <CardDescription>Common tasks and shortcuts</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+              <Link href="/companies">
+                <Button variant="outline" className="w-full h-auto flex flex-col items-center py-4">
+                  <Building2 className="h-6 w-6 mb-2" />
+                  <span className="text-xs">Manage Companies</span>
+                </Button>
+              </Link>
+              <Link href="/accounts">
+                <Button variant="outline" className="w-full h-auto flex flex-col items-center py-4">
+                  <BarChart3 className="h-6 w-6 mb-2" />
+                  <span className="text-xs">Chart of Accounts</span>
+                </Button>
+              </Link>
+              <Link href="/documents">
+                <Button variant="outline" className="w-full h-auto flex flex-col items-center py-4">
+                  <FileText className="h-6 w-6 mb-2" />
+                  <span className="text-xs">Upload Document</span>
+                </Button>
+              </Link>
+              <Link href="/transactions">
+                <Button variant="outline" className="w-full h-auto flex flex-col items-center py-4">
+                  <Receipt className="h-6 w-6 mb-2" />
+                  <span className="text-xs">View Transactions</span>
+                </Button>
+              </Link>
+              <Link href="/reports">
+                <Button variant="outline" className="w-full h-auto flex flex-col items-center py-4">
+                  <BarChart3 className="h-6 w-6 mb-2" />
+                  <span className="text-xs">Generate Reports</span>
+                </Button>
+              </Link>
+              <Link href="/irs-forms">
+                <Button variant="outline" className="w-full h-auto flex flex-col items-center py-4">
+                  <FileText className="h-6 w-6 mb-2" />
+                  <span className="text-xs">IRS Forms</span>
+                </Button>
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Getting Started */}
+        <Card className="mt-8">
+          <CardHeader>
+            <CardTitle>Getting Started</CardTitle>
+            <CardDescription>Follow these steps to set up your accounting system</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ol className="space-y-4">
+              <li className="flex items-start space-x-3">
+                <span className="flex-shrink-0 w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-medium">
+                  1
+                </span>
+                <div>
+                  <h3 className="font-medium">Set up your company</h3>
+                  <p className="text-sm text-gray-600">Add company details and configure fiscal year</p>
+                </div>
+              </li>
+              <li className="flex items-start space-x-3">
+                <span className="flex-shrink-0 w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-medium">
+                  2
+                </span>
+                <div>
+                  <h3 className="font-medium">Upload bank statements</h3>
+                  <p className="text-sm text-gray-600">Import transactions from PDF, CSV, or images</p>
+                </div>
+              </li>
+              <li className="flex items-start space-x-3">
+                <span className="flex-shrink-0 w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-medium">
+                  3
+                </span>
+                <div>
+                  <h3 className="font-medium">Review and validate transactions</h3>
+                  <p className="text-sm text-gray-600">Categorize and approve extracted data</p>
+                </div>
+              </li>
+              <li className="flex items-start space-x-3">
+                <span className="flex-shrink-0 w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-medium">
+                  4
+                </span>
+                <div>
+                  <h3 className="font-medium">Generate financial reports</h3>
+                  <p className="text-sm text-gray-600">Create Balance Sheet, Income Statement, and Cash Flow reports</p>
+                </div>
+              </li>
+            </ol>
+          </CardContent>
+        </Card>
       </main>
     </div>
   );

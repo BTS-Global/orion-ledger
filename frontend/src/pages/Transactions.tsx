@@ -1,6 +1,25 @@
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -8,227 +27,516 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useEffect, useState } from "react";
-import { CheckCircle, Loader2, AlertCircle } from "lucide-react";
-
-import { BACKEND_URL } from "@/config/api";;
+import { Textarea } from "@/components/ui/textarea";
+import { CheckCircle2, XCircle, Edit, Trash2, RefreshCw } from "lucide-react";
+import { BACKEND_URL } from "@/config/api";
 
 interface Transaction {
   id: string;
+  company: string;
+  document: string | null;
   date: string;
   description: string;
-  amount: number;
-  account_name: string | null;
+  amount: string;
+  category: string | null;
+  account: string | null;
   is_validated: boolean;
   suggested_category: string | null;
   confidence_score: number;
-  document_name: string | null;
+  notes: string | null;
+}
+
+interface Company {
+  id: string;
+  name: string;
 }
 
 interface Account {
   id: string;
-  account_code: string;
+  account_number: string;
   account_name: string;
   account_type: string;
 }
 
 export default function Transactions() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [companies, setCompanies] = useState<Company[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [loading, setLoading] = useState(true);
-  const [validating, setValidating] = useState<string | null>(null);
+  const [selectedCompany, setSelectedCompany] = useState<string>("");
+  const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
+  const [editForm, setEditForm] = useState({
+    date: "",
+    description: "",
+    amount: "",
+    category: "",
+    account: "",
+    notes: "",
+  });
 
   useEffect(() => {
-    fetchTransactions();
+    fetchCompanies();
     fetchAccounts();
   }, []);
 
-  const fetchTransactions = async () => {
-    try {
-      const response = await fetch(`${BACKEND_URL}/api/transactions/pending/`, {
-        credentials: 'include',
-      });
+  useEffect(() => {
+    if (selectedCompany) {
+      fetchTransactions();
+    }
+  }, [selectedCompany, filterStatus]);
 
-      if (response.ok) {
-        const data = await response.json();
-        setTransactions(data);
+  const fetchCompanies = async () => {
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/companies/`);
+      const data = await response.json();
+      const companies = data.results || data || [];
+      setCompanies(companies);
+      if (companies.length > 0) {
+        setSelectedCompany(companies[0].id);
       }
     } catch (error) {
-      console.error('Failed to fetch transactions:', error);
-    } finally {
-      setLoading(false);
+      console.error("Error fetching companies:", error);
     }
   };
 
   const fetchAccounts = async () => {
     try {
-      const response = await fetch(`${BACKEND_URL}/api/accounts/?active=true`, {
-        credentials: 'include',
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setAccounts(data);
-      }
+      const response = await fetch(`${BACKEND_URL}/api/accounts/`);
+      const data = await response.json();
+      setAccounts(data.results || data || []);
     } catch (error) {
-      console.error('Failed to fetch accounts:', error);
+      console.error("Error fetching accounts:", error);
     }
   };
 
-  const handleValidate = async (transactionId: string, accountId: string) => {
-    setValidating(transactionId);
+  const fetchTransactions = async () => {
+    setLoading(true);
+    try {
+      let url = `${BACKEND_URL}/api/transactions/?company=${selectedCompany}`;
+      if (filterStatus === "validated") {
+        url += "&is_validated=true";
+      } else if (filterStatus === "pending") {
+        url += "&is_validated=false";
+      }
+      
+      const response = await fetch(url);
+      const data = await response.json();
+      setTransactions(data.results || data || []);
+    } catch (error) {
+      console.error("Error fetching transactions:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEdit = (transaction: Transaction) => {
+    setSelectedTransaction(transaction);
+    setEditForm({
+      date: transaction.date,
+      description: transaction.description,
+      amount: transaction.amount,
+      category: transaction.category || "",
+      account: transaction.account || "",
+      notes: transaction.notes || "",
+    });
+    setEditDialogOpen(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!selectedTransaction) return;
 
     try {
       const response = await fetch(
-        `${BACKEND_URL}/api/transactions/${transactionId}/validate_transaction/`,
+        `${BACKEND_URL}/api/transactions/${selectedTransaction.id}/`,
         {
-          method: 'POST',
-          credentials: 'include',
+          method: "PATCH",
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
-          body: JSON.stringify({ account: accountId }),
+          body: JSON.stringify(editForm),
         }
       );
 
       if (response.ok) {
-        // Remove validated transaction from list
-        setTransactions(transactions.filter(t => t.id !== transactionId));
-      } else {
-        const error = await response.json();
-        alert(`Validation failed: ${error.error || 'Unknown error'}`);
+        setEditDialogOpen(false);
+        fetchTransactions();
       }
     } catch (error) {
-      console.error('Validation error:', error);
-      alert('Failed to validate transaction');
-    } finally {
-      setValidating(null);
+      console.error("Error updating transaction:", error);
     }
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(amount);
+  const handleValidate = async (transactionId: string) => {
+    try {
+      const response = await fetch(
+        `${BACKEND_URL}/api/transactions/${transactionId}/validate/`,
+        {
+          method: "POST",
+        }
+      );
+
+      if (response.ok) {
+        fetchTransactions();
+      }
+    } catch (error) {
+      console.error("Error validating transaction:", error);
+    }
   };
 
-  const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    });
+  const handleDelete = async (transactionId: string) => {
+    if (!confirm("Tem certeza que deseja deletar esta transação?")) return;
+
+    try {
+      const response = await fetch(
+        `${BACKEND_URL}/api/transactions/${transactionId}/`,
+        {
+          method: "DELETE",
+        }
+      );
+
+      if (response.ok) {
+        fetchTransactions();
+      }
+    } catch (error) {
+      console.error("Error deleting transaction:", error);
+    }
+  };
+
+  const handleBulkValidate = async () => {
+    const unvalidatedIds = transactions
+      .filter((t) => !t.is_validated)
+      .map((t) => t.id);
+
+    if (unvalidatedIds.length === 0) {
+      alert("Nenhuma transação pendente para validar");
+      return;
+    }
+
+    if (!confirm(`Validar ${unvalidatedIds.length} transações?`)) return;
+
+    for (const id of unvalidatedIds) {
+      await handleValidate(id);
+    }
+  };
+
+  const formatCurrency = (value: string) => {
+    const num = parseFloat(value);
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+    }).format(num);
   };
 
   const getConfidenceBadge = (score: number) => {
-    if (score >= 0.8) {
-      return <Badge className="bg-green-500">High Confidence</Badge>;
-    } else if (score >= 0.5) {
-      return <Badge className="bg-yellow-500">Medium Confidence</Badge>;
-    } else {
-      return <Badge className="bg-red-500">Low Confidence</Badge>;
-    }
+    if (score >= 0.8) return <Badge className="bg-green-500">Alta</Badge>;
+    if (score >= 0.5) return <Badge className="bg-yellow-500">Média</Badge>;
+    return <Badge className="bg-red-500">Baixa</Badge>;
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b">
-        <div className="container mx-auto px-4 py-4">
-          <h1 className="text-2xl font-bold">Pending Transactions</h1>
-          <p className="text-sm text-muted-foreground">
-            Review and categorize extracted transactions
+    <div className="min-h-screen bg-gray-50 p-8">
+      <div className="max-w-7xl mx-auto">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900">Transações</h1>
+          <p className="text-gray-600 mt-2">
+            Valide e gerencie transações extraídas dos documentos
           </p>
         </div>
-      </header>
 
-      <main className="container mx-auto px-4 py-8">
-        <Card>
-          <CardHeader>
-            <CardTitle>Transactions Awaiting Validation</CardTitle>
-            <CardDescription>
-              {transactions.length} transaction{transactions.length !== 1 ? 's' : ''} pending
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <div className="text-center py-8">
-                <Loader2 className="w-8 h-8 animate-spin mx-auto mb-2" />
-                <p className="text-muted-foreground">Loading transactions...</p>
-              </div>
-            ) : transactions.length === 0 ? (
-              <div className="text-center py-8">
-                <CheckCircle className="w-12 h-12 mx-auto mb-2 text-green-500" />
-                <p className="text-lg font-medium">All caught up!</p>
-                <p className="text-muted-foreground">No pending transactions to validate</p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {transactions.map((transaction) => (
-                  <div
-                    key={transaction.id}
-                    className="border rounded-lg p-4 hover:bg-gray-50"
-                  >
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <p className="font-medium">{transaction.description}</p>
-                          {transaction.confidence_score > 0 && 
-                            getConfidenceBadge(transaction.confidence_score)
-                          }
-                        </div>
-                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                          <span>{formatDate(transaction.date)}</span>
-                          {transaction.document_name && (
-                            <span>From: {transaction.document_name}</span>
-                          )}
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className={`text-lg font-bold ${
-                          transaction.amount >= 0 ? 'text-green-600' : 'text-red-600'
-                        }`}>
-                          {formatCurrency(transaction.amount)}
-                        </p>
-                      </div>
-                    </div>
+        {/* Filters */}
+        <Card className="p-6 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <Label>Empresa</Label>
+              <Select value={selectedCompany} onValueChange={setSelectedCompany}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione uma empresa" />
+                </SelectTrigger>
+                <SelectContent>
+                  {companies.map((company) => (
+                    <SelectItem key={company.id} value={company.id}>
+                      {company.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-                    {transaction.suggested_category && (
-                      <div className="mb-3 p-2 bg-blue-50 border border-blue-200 rounded text-sm">
-                        <AlertCircle className="w-4 h-4 inline mr-1 text-blue-600" />
-                        <span className="text-blue-800">
-                          Suggested: {transaction.suggested_category}
-                        </span>
-                      </div>
-                    )}
+            <div>
+              <Label>Status</Label>
+              <Select value={filterStatus} onValueChange={setFilterStatus}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas</SelectItem>
+                  <SelectItem value="pending">Pendentes</SelectItem>
+                  <SelectItem value="validated">Validadas</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-                    <div className="flex items-center gap-2">
-                      <Select
-                        onValueChange={(value) => handleValidate(transaction.id, value)}
-                        disabled={validating === transaction.id}
-                      >
-                        <SelectTrigger className="flex-1">
-                          <SelectValue placeholder="Select account to categorize..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {accounts.map((account) => (
-                            <SelectItem key={account.id} value={account.id}>
-                              {account.account_code} - {account.account_name} ({account.account_type})
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      {validating === transaction.id && (
-                        <Loader2 className="w-5 h-5 animate-spin text-primary" />
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
+            <div className="flex items-end gap-2">
+              <Button onClick={fetchTransactions} variant="outline">
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Atualizar
+              </Button>
+              <Button onClick={handleBulkValidate}>
+                <CheckCircle2 className="h-4 w-4 mr-2" />
+                Validar Todas
+              </Button>
+            </div>
+          </div>
         </Card>
-      </main>
+
+        {/* Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          <Card className="p-4">
+            <div className="text-sm text-gray-600">Total</div>
+            <div className="text-2xl font-bold">{transactions.length}</div>
+          </Card>
+          <Card className="p-4">
+            <div className="text-sm text-gray-600">Pendentes</div>
+            <div className="text-2xl font-bold text-yellow-600">
+              {transactions.filter((t) => !t.is_validated).length}
+            </div>
+          </Card>
+          <Card className="p-4">
+            <div className="text-sm text-gray-600">Validadas</div>
+            <div className="text-2xl font-bold text-green-600">
+              {transactions.filter((t) => t.is_validated).length}
+            </div>
+          </Card>
+          <Card className="p-4">
+            <div className="text-sm text-gray-600">Total (USD)</div>
+            <div className="text-2xl font-bold">
+              {formatCurrency(
+                transactions
+                  .reduce((sum, t) => sum + parseFloat(t.amount), 0)
+                  .toString()
+              )}
+            </div>
+          </Card>
+        </div>
+
+        {/* Transactions Table */}
+        <Card>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Data</TableHead>
+                  <TableHead>Descrição</TableHead>
+                  <TableHead>Valor</TableHead>
+                  <TableHead>Categoria</TableHead>
+                  <TableHead>Conta</TableHead>
+                  <TableHead>Confiança</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {loading ? (
+                  <TableRow>
+                    <TableCell colSpan={8} className="text-center py-8">
+                      Carregando...
+                    </TableCell>
+                  </TableRow>
+                ) : transactions.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={8} className="text-center py-8">
+                      Nenhuma transação encontrada
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  transactions.map((transaction) => (
+                    <TableRow key={transaction.id}>
+                      <TableCell>
+                        {new Date(transaction.date).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell className="max-w-xs truncate">
+                        {transaction.description}
+                      </TableCell>
+                      <TableCell
+                        className={
+                          parseFloat(transaction.amount) >= 0
+                            ? "text-green-600 font-semibold"
+                            : "text-red-600 font-semibold"
+                        }
+                      >
+                        {formatCurrency(transaction.amount)}
+                      </TableCell>
+                      <TableCell>
+                        {transaction.category || transaction.suggested_category || (
+                          <span className="text-gray-400">-</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {transaction.account ? (
+                          <span className="text-sm">
+                            {accounts.find((a) => a.id === transaction.account)
+                              ?.account_name || transaction.account}
+                          </span>
+                        ) : (
+                          <span className="text-gray-400">-</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {getConfidenceBadge(transaction.confidence_score)}
+                      </TableCell>
+                      <TableCell>
+                        {transaction.is_validated ? (
+                          <Badge className="bg-green-500">
+                            <CheckCircle2 className="h-3 w-3 mr-1" />
+                            Validada
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline">
+                            <XCircle className="h-3 w-3 mr-1" />
+                            Pendente
+                          </Badge>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleEdit(transaction)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          {!transaction.is_validated && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleValidate(transaction.id)}
+                            >
+                              <CheckCircle2 className="h-4 w-4 text-green-600" />
+                            </Button>
+                          )}
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleDelete(transaction.id)}
+                          >
+                            <Trash2 className="h-4 w-4 text-red-600" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </Card>
+
+        {/* Edit Dialog */}
+        <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Editar Transação</DialogTitle>
+              <DialogDescription>
+                Edite os detalhes da transação e associe a uma conta contábil
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="date">Data</Label>
+                  <Input
+                    id="date"
+                    type="date"
+                    value={editForm.date}
+                    onChange={(e) =>
+                      setEditForm({ ...editForm, date: e.target.value })
+                    }
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="amount">Valor</Label>
+                  <Input
+                    id="amount"
+                    type="number"
+                    step="0.01"
+                    value={editForm.amount}
+                    onChange={(e) =>
+                      setEditForm({ ...editForm, amount: e.target.value })
+                    }
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="description">Descrição</Label>
+                <Input
+                  id="description"
+                  value={editForm.description}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, description: e.target.value })
+                  }
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="category">Categoria</Label>
+                  <Input
+                    id="category"
+                    value={editForm.category}
+                    onChange={(e) =>
+                      setEditForm({ ...editForm, category: e.target.value })
+                    }
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="account">Conta Contábil</Label>
+                  <Select
+                    value={editForm.account}
+                    onValueChange={(value) =>
+                      setEditForm({ ...editForm, account: value })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione uma conta" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {accounts.map((account) => (
+                        <SelectItem key={account.id} value={account.id}>
+                          {account.account_number} - {account.account_name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="notes">Notas</Label>
+                <Textarea
+                  id="notes"
+                  value={editForm.notes}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, notes: e.target.value })
+                  }
+                  rows={3}
+                />
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
+                Cancelar
+              </Button>
+              <Button onClick={handleSaveEdit}>Salvar</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
     </div>
   );
 }
