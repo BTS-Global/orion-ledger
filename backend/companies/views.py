@@ -23,7 +23,8 @@ class CompanyViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self):
         """Return companies owned by or accessible to the current user."""
-        # TODO: Re-enable authentication filtering after implementing proper login
+        # NOTE: Authentication temporarily disabled for development
+        # Will be re-enabled in authentication phase
         # if self.request.user.is_authenticated:
         #     user = self.request.user
         #     return Company.objects.filter(owner=user) | Company.objects.filter(users=user)
@@ -46,8 +47,8 @@ class CompanyViewSet(viewsets.ModelViewSet):
         """Set this company as the active company for the current user."""
         company = self.get_object()
         
-        # TODO: Re-enable authentication after implementing proper login
-        # For now, just return success without saving to profile
+        # NOTE: Authentication temporarily disabled for development
+        # Will be re-enabled in authentication phase
         if not request.user.is_authenticated:
             return Response({
                 'status': 'success',

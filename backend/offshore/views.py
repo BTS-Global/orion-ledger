@@ -79,15 +79,82 @@ class AnnualReturnViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'])
     def generate_pdf(self, request, pk=None):
         """Generate PDF for this annual return."""
+        from django.http import HttpResponse
+        from django.template.loader import render_to_string
+        from weasyprint import HTML
+        import tempfile
+        import logging
+        
+        logger = logging.getLogger(__name__)
         annual_return = self.get_object()
         
-        # TODO: Implement PDF generation logic
-        # This would use ReportLab or WeasyPrint to generate the PDF
-        
-        return Response({
-            'message': 'PDF generation is not yet implemented',
-            'id': str(annual_return.id)
-        }, status=status.HTTP_501_NOT_IMPLEMENTED)
+        try:
+            # Prepare context for template
+            context = {
+                'annual_return': annual_return,
+                'company': annual_return.company,
+                'filing_year': annual_return.filing_year,
+                'due_date': annual_return.due_date,
+                'reference_number': annual_return.reference_number,
+                'status': annual_return.get_status_display(),
+                'notes': annual_return.notes,
+            }
+            
+            # Generate HTML from template (create template later if needed)
+            html_content = f"""
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="utf-8">
+                <title>Annual Return - {annual_return.company.company_name}</title>
+                <style>
+                    body {{ font-family: Arial, sans-serif; margin: 40px; }}
+                    h1 {{ color: #333; }}
+                    .header {{ border-bottom: 2px solid #333; padding-bottom: 20px; margin-bottom: 30px; }}
+                    .section {{ margin-bottom: 20px; }}
+                    .label {{ font-weight: bold; display: inline-block; width: 150px; }}
+                    .value {{ display: inline-block; }}
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <h1>Annual Return</h1>
+                    <p><strong>Company:</strong> {annual_return.company.company_name}</p>
+                    <p><strong>Reference:</strong> {annual_return.reference_number or 'N/A'}</p>
+                </div>
+                
+                <div class="section">
+                    <p><span class="label">Filing Year:</span><span class="value">{annual_return.filing_year}</span></p>
+                    <p><span class="label">Due Date:</span><span class="value">{annual_return.due_date}</span></p>
+                    <p><span class="label">Status:</span><span class="value">{annual_return.get_status_display()}</span></p>
+                    <p><span class="label">Created:</span><span class="value">{annual_return.created_at.strftime('%Y-%m-%d')}</span></p>
+                </div>
+                
+                {f'<div class="section"><h3>Notes</h3><p>{annual_return.notes}</p></div>' if annual_return.notes else ''}
+                
+                <div class="footer" style="margin-top: 50px; border-top: 1px solid #ccc; padding-top: 20px; text-align: center; color: #666;">
+                    <p>Generated on {timezone.now().strftime('%Y-%m-%d %H:%M:%S')}</p>
+                </div>
+            </body>
+            </html>
+            """
+            
+            # Generate PDF
+            pdf_file = HTML(string=html_content).write_pdf()
+            
+            # Return PDF as response
+            response = HttpResponse(pdf_file, content_type='application/pdf')
+            response['Content-Disposition'] = f'attachment; filename="annual_return_{annual_return.company.company_name}_{annual_return.filing_year}.pdf"'
+            
+            logger.info(f"Generated PDF for Annual Return {annual_return.id}")
+            return response
+            
+        except Exception as e:
+            logger.error(f"Failed to generate PDF for Annual Return {annual_return.id}: {e}")
+            return Response({
+                'error': 'Failed to generate PDF',
+                'detail': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class EconomicSubstanceReportViewSet(viewsets.ModelViewSet):
@@ -136,14 +203,95 @@ class EconomicSubstanceReportViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'])
     def generate_pdf(self, request, pk=None):
         """Generate PDF for this ES report."""
+        from django.http import HttpResponse
+        from weasyprint import HTML
+        import logging
+        
+        logger = logging.getLogger(__name__)
         es_report = self.get_object()
         
-        # TODO: Implement PDF generation logic
-        
-        return Response({
-            'message': 'PDF generation is not yet implemented',
-            'id': str(es_report.id)
-        }, status=status.HTTP_501_NOT_IMPLEMENTED)
+        try:
+            # Prepare HTML content for Economic Substance Report
+            html_content = f"""
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="utf-8">
+                <title>Economic Substance Report - {es_report.company.company_name}</title>
+                <style>
+                    body {{ font-family: Arial, sans-serif; margin: 40px; }}
+                    h1 {{ color: #333; }}
+                    .header {{ border-bottom: 2px solid #333; padding-bottom: 20px; margin-bottom: 30px; }}
+                    .section {{ margin-bottom: 20px; }}
+                    .label {{ font-weight: bold; display: inline-block; width: 200px; }}
+                    .value {{ display: inline-block; }}
+                    table {{ width: 100%; border-collapse: collapse; margin-top: 20px; }}
+                    th, td {{ border: 1px solid #ddd; padding: 8px; text-align: left; }}
+                    th {{ background-color: #f2f2f2; }}
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <h1>Economic Substance Report</h1>
+                    <p><strong>Company:</strong> {es_report.company.company_name}</p>
+                    <p><strong>Reference:</strong> {es_report.reference_number or 'N/A'}</p>
+                </div>
+                
+                <div class="section">
+                    <h2>Report Information</h2>
+                    <p><span class="label">Reporting Year:</span><span class="value">{es_report.reporting_year}</span></p>
+                    <p><span class="label">Status:</span><span class="value">{es_report.get_status_display()}</span></p>
+                    <p><span class="label">Business Activity:</span><span class="value">{es_report.get_business_activity_display()}</span></p>
+                    <p><span class="label">Meets Requirements:</span><span class="value">{'Yes' if es_report.meets_substance_requirements else 'No'}</span></p>
+                </div>
+                
+                <div class="section">
+                    <h2>Economic Indicators</h2>
+                    <table>
+                        <tr>
+                            <th>Indicator</th>
+                            <th>Value</th>
+                        </tr>
+                        <tr>
+                            <td>Number of Employees</td>
+                            <td>{es_report.number_of_employees or 0}</td>
+                        </tr>
+                        <tr>
+                            <td>Operating Expenditure</td>
+                            <td>${es_report.operating_expenditure or 0:,.2f}</td>
+                        </tr>
+                        <tr>
+                            <td>Physical Assets Value</td>
+                            <td>${es_report.physical_assets_value or 0:,.2f}</td>
+                        </tr>
+                    </table>
+                </div>
+                
+                {f'<div class="section"><h3>Notes</h3><p>{es_report.notes}</p></div>' if es_report.notes else ''}
+                
+                <div class="footer" style="margin-top: 50px; border-top: 1px solid #ccc; padding-top: 20px; text-align: center; color: #666;">
+                    <p>Generated on {timezone.now().strftime('%Y-%m-%d %H:%M:%S')}</p>
+                </div>
+            </body>
+            </html>
+            """
+            
+            # Generate PDF
+            pdf_file = HTML(string=html_content).write_pdf()
+            
+            # Return PDF as response
+            response = HttpResponse(pdf_file, content_type='application/pdf')
+            response['Content-Disposition'] = f'attachment; filename="economic_substance_{es_report.company.company_name}_{es_report.reporting_year}.pdf"'
+            
+            logger.info(f"Generated PDF for Economic Substance Report {es_report.id}")
+            return response
+            
+        except Exception as e:
+            logger.error(f"Failed to generate PDF for ES Report {es_report.id}: {e}")
+            return Response({
+                'error': 'Failed to generate PDF',
+                'detail': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class JurisdictionFeeViewSet(viewsets.ModelViewSet):
