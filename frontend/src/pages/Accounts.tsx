@@ -12,6 +12,7 @@ import { InfoTooltip } from "@/components/InfoTooltip";
 import { ACCOUNT_TYPE_TOOLTIPS, ACCOUNT_CODE_TOOLTIP, DOUBLE_ENTRY_TOOLTIP } from "@/lib/tooltips";
 import { AIChartAnalysis } from "@/components/AIChartAnalysis";
 import { AccountHierarchyTree } from "@/components/AccountHierarchyTree";
+import { AccountSuggestions } from "@/components/AccountSuggestions";
 
 import { BACKEND_URL } from "@/config/api";;
 
@@ -351,6 +352,13 @@ export default function Accounts() {
         {companies.length > 0 && (
           <div className="mb-6">
             <AIChartAnalysis companyId={companies[0].id} />
+          </div>
+        )}
+
+        {/* Account Suggestions */}
+        {filterCompany !== 'all' && (
+          <div className="mb-6">
+            <AccountSuggestions companyId={filterCompany} />
           </div>
         )}
 

@@ -159,6 +159,49 @@ class TransactionViewSet(viewsets.ModelViewSet):
         })
     
     @action(detail=False, methods=['get'])
+    def suggest_accounts(self, request):
+        """GET endpoint to suggest accounts based on description (for easy frontend integration)."""
+        description = request.query_params.get('description', '')
+        amount_str = request.query_params.get('amount', None)
+        company_id = request.query_params.get('company', None)
+        
+        if not description:
+            return Response(
+                {'error': 'Description is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        if not company_id:
+            return Response(
+                {'error': 'Company ID is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            company = Company.objects.get(id=company_id)
+        except Company.DoesNotExist:
+            return Response(
+                {'error': 'Company not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        amount = None
+        if amount_str:
+            try:
+                amount = float(amount_str)
+            except ValueError:
+                pass
+        
+        # Use AccountMapper to get suggestions
+        mapper = AccountMapper(company)
+        suggestions = mapper.suggest_account(description, amount)
+        
+        return Response({
+            'suggestions': suggestions,
+            'count': len(suggestions)
+        })
+    
+    @action(detail=False, methods=['get'])
     def account_statistics(self, request):
         """Get account usage statistics for a company."""
         company_id = request.query_params.get('company', None)
