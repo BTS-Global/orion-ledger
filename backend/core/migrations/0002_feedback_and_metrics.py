@@ -11,8 +11,8 @@ class Migration(migrations.Migration):
     dependencies = [
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
         ('core', '0001_initial'),
-        ('companies', '0002_chartofaccounts_is_group_account_and_more'),
-        ('transactions', '0002_add_rag_and_feedback'),
+        ('companies', '0001_initial'),
+        ('transactions', '0001_initial'),
     ]
 
     operations = [

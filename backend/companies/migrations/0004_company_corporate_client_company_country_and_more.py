@@ -7,7 +7,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('companies', '0003_chartofaccounts_allow_multi_currency_and_more'),
+        ('companies', '0001_initial'),
         ('offshore', '0001_initial'),
     ]
 

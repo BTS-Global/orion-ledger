@@ -1,6 +1,5 @@
 from django.contrib import admin
-from .models import AuditLog
-from .feedback_service import FeedbackEntry, PredictionMetrics
+from .models import AuditLog, FeedbackEntry, PredictionMetrics
 
 
 @admin.register(AuditLog)

@@ -10,12 +10,12 @@ from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
 from companies.views import CompanyViewSet, UserProfileViewSet, ChartOfAccountsViewSet
 from documents.views import DocumentViewSet
-from transactions.views import TransactionViewSet, JournalEntryViewSet
+from transactions.views import TransactionViewSet
 from reports.views import ReportViewSet
 from irs_forms.views import IRSFormViewSet
 from core.views import current_user, logout_view, auth_status, get_csrf_token, debug_session, test_login
 from core.auth_views import register_user, login_user, logout_user
-# from core import ai_views  # TODO: Add AI routes
+from core import ai_views
 
 # Create router and register viewsets
 router = DefaultRouter()
@@ -24,7 +24,6 @@ router.register(r'profiles', UserProfileViewSet, basename='userprofile')
 router.register(r'accounts', ChartOfAccountsViewSet, basename='chartofaccounts')
 router.register(r'documents', DocumentViewSet, basename='document')
 router.register(r'transactions', TransactionViewSet, basename='transaction')
-router.register(r'journal-entries', JournalEntryViewSet, basename='journalentry')
 router.register(r'reports', ReportViewSet, basename='report')
 router.register(r'irs-forms', IRSFormViewSet, basename='irsform')
 
@@ -55,14 +54,14 @@ urlpatterns = [
     path('api/auth/login/', login_user, name='login'),
     path('api/auth/logout-local/', logout_user, name='logout-local'),
     
-    # AI Features (RAG, Feedback, Active Learning) - TODO: Uncomment after migrations
-    # path('api/companies/<uuid:company_id>/ai/feedback/', ai_views.record_feedback, name='ai-feedback'),
-    # path('api/companies/<uuid:company_id>/ai/low-confidence/', ai_views.get_low_confidence_transactions, name='ai-low-confidence'),
-    # path('api/companies/<uuid:company_id>/ai/metrics/', ai_views.get_accuracy_metrics, name='ai-metrics'),
-    # path('api/companies/<uuid:company_id>/ai/similar/', ai_views.find_similar_transactions, name='ai-similar'),
-    # path('api/companies/<uuid:company_id>/ai/generate-embeddings/', ai_views.generate_embeddings, name='ai-generate-embeddings'),
-    # path('api/companies/<uuid:company_id>/ai/rag-stats/', ai_views.get_rag_stats, name='ai-rag-stats'),
-    # path('api/companies/<uuid:company_id>/ai/classify/', ai_views.classify_with_rag, name='ai-classify'),
+    # AI Features (RAG, Feedback, Active Learning)
+    path('api/companies/<uuid:company_id>/ai/feedback/', ai_views.record_feedback, name='ai-feedback'),
+    path('api/companies/<uuid:company_id>/ai/low-confidence/', ai_views.get_low_confidence_transactions, name='ai-low-confidence'),
+    path('api/companies/<uuid:company_id>/ai/metrics/', ai_views.get_accuracy_metrics, name='ai-metrics'),
+    path('api/companies/<uuid:company_id>/ai/similar/', ai_views.find_similar_transactions, name='ai-similar'),
+    path('api/companies/<uuid:company_id>/ai/generate-embeddings/', ai_views.generate_embeddings, name='ai-generate-embeddings'),
+    path('api/companies/<uuid:company_id>/ai/rag-stats/', ai_views.get_rag_stats, name='ai-rag-stats'),
+    path('api/companies/<uuid:company_id>/ai/classify/', ai_views.classify_with_rag, name='ai-classify'),
     
     # Social auth
     path('accounts/', include('allauth.urls')),
