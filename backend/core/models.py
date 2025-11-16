@@ -1,6 +1,56 @@
 from django.db import models
 from django.contrib.auth.models import User
 import uuid
+import secrets
+
+
+class APIKey(models.Model):
+    """API keys for MCP server authentication."""
+    
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    key = models.CharField(max_length=64, unique=True, db_index=True)
+    company = models.ForeignKey(
+        'companies.Company',
+        on_delete=models.CASCADE,
+        related_name='api_keys'
+    )
+    created_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='created_api_keys'
+    )
+    name = models.CharField(max_length=100, help_text="Friendly name for this API key")
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    last_used_at = models.DateTimeField(null=True, blank=True)
+    expires_at = models.DateTimeField(null=True, blank=True)
+    
+    # Permissions
+    can_read = models.BooleanField(default=True)
+    can_write = models.BooleanField(default=False)
+    can_classify = models.BooleanField(default=True)
+    can_audit = models.BooleanField(default=True)
+    
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['key', 'is_active']),
+            models.Index(fields=['company', 'is_active']),
+        ]
+    
+    def __str__(self):
+        return f"{self.name} - {self.company.name}"
+    
+    @staticmethod
+    def generate_key():
+        """Generate a secure random API key."""
+        return f"orion_mcp_{secrets.token_urlsafe(32)}"
+    
+    def save(self, *args, **kwargs):
+        if not self.key:
+            self.key = self.generate_key()
+        super().save(*args, **kwargs)
 
 
 class AuditLog(models.Model):
@@ -13,9 +63,21 @@ class AuditLog(models.Model):
         null=True, 
         related_name='audit_logs'
     )
+    
+    # MCP-specific fields
+    company_id = models.CharField(max_length=100, null=True, blank=True, db_index=True)
+    request_id = models.CharField(max_length=100, null=True, blank=True, db_index=True)
+    service = models.CharField(max_length=50, default='web', help_text="Service that generated the log")
+    method = models.CharField(max_length=10, blank=True)
+    path = models.CharField(max_length=500, blank=True)
+    status_code = models.IntegerField(null=True, blank=True)
+    duration_ms = models.IntegerField(null=True, blank=True)
+    success = models.BooleanField(default=True)
+    
+    # Original fields
     action = models.CharField(max_length=100, help_text="Action performed")
-    timestamp = models.DateTimeField(auto_now_add=True)
-    details = models.JSONField(help_text="Additional details about the action")
+    timestamp = models.DateTimeField(auto_now_add=True, db_index=True)
+    details = models.JSONField(default=dict, help_text="Additional details about the action")
     ip_address = models.GenericIPAddressField(null=True, blank=True)
     user_agent = models.TextField(blank=True)
     
@@ -28,9 +90,13 @@ class AuditLog(models.Model):
         indexes = [
             models.Index(fields=['user', 'timestamp']),
             models.Index(fields=['action', 'timestamp']),
+            models.Index(fields=['company_id', 'timestamp']),
+            models.Index(fields=['service', 'timestamp']),
         ]
     
     def __str__(self):
+        if self.service == 'mcp-server':
+            return f"[MCP] {self.timestamp} - {self.company_id} - {self.method} {self.path}"
         return f"{self.timestamp} - {self.user} - {self.action}"
 
 
@@ -154,4 +220,40 @@ class PredictionMetrics(models.Model):
         if self.total_predictions == 0:
             return 0.0
         return (self.correct_predictions / self.total_predictions) * 100
+
+
+class AIPrediction(models.Model):
+    """Store AI predictions for learning and improvement."""
+    
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    company_id = models.CharField(max_length=100, db_index=True)
+    
+    # Input data
+    transaction_data = models.JSONField(help_text="Original transaction data")
+    
+    # Prediction
+    predicted_account = models.CharField(max_length=50)
+    confidence = models.FloatField()
+    reasoning = models.TextField(blank=True)
+    model_used = models.CharField(max_length=50, default='claude-3-sonnet')
+    
+    # Feedback
+    was_correct = models.BooleanField(null=True, blank=True)
+    actual_account = models.CharField(max_length=50, null=True, blank=True)
+    feedback_at = models.DateTimeField(null=True, blank=True)
+    
+    # Metadata
+    created_at = models.DateTimeField(auto_now_add=True)
+    embedding = models.JSONField(null=True, blank=True, help_text="Vector embedding for similarity search")
+    
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['company_id', 'created_at']),
+            models.Index(fields=['predicted_account', 'confidence']),
+            models.Index(fields=['was_correct']),
+        ]
+    
+    def __str__(self):
+        return f"Prediction: {self.predicted_account} ({self.confidence:.2f})"
 
