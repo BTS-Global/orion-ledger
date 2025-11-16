@@ -20,6 +20,7 @@ from .models import Document
 from .validators import TransactionValidator, LLMResponseValidator
 from transactions.models import Transaction
 from companies.models import ChartOfAccounts
+from core.rag_service import rag_service
 
 logger = logging.getLogger(__name__)
 
@@ -351,6 +352,32 @@ def extract_transactions_from_table(table):
     return transactions
 
 
+def extract_transactions_pattern_matching(text):
+    """Fallback: Extract transactions using regex patterns."""
+    import re
+    transactions = []
+    
+    # Pattern for date + amount + description
+    # Example: "01/15/2024 $45.50 Grocery Store"
+    pattern = r'(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})\s+\$?([\d,]+\.\d{2})\s+(.+?)(?=\n|$)'
+    
+    matches = re.findall(pattern, text, re.MULTILINE)
+    
+    for match in matches:
+        try:
+            date_str, amount_str, description = match
+            transactions.append({
+                'date': parse_date(date_str),
+                'description': description.strip(),
+                'amount': parse_amount(amount_str),
+                'confidence': 0.5  # Lower confidence for pattern matching
+            })
+        except:
+            continue
+    
+    return transactions
+
+
 def extract_transactions_from_text(text):
     """Extract transactions from plain text using Manus LLM API (OpenAI-compatible)."""
     transactions = []
@@ -362,7 +389,7 @@ def extract_transactions_from_text(text):
         from openai import OpenAI
         from django.conf import settings
         
-        logger.info("Starting LLM-based transaction extraction")
+        logger.info("Starting LLM-based transaction extraction with RAG")
         
         # Initialize Manus API client (OpenAI-compatible)
         client = OpenAI()
@@ -380,7 +407,7 @@ def extract_transactions_from_text(text):
                 },
                 {"role": "user", "content": prompt}
             ],
-            temperature=0.3,  # Increased for better pattern recognition
+            temperature=0.3,
             max_tokens=3000
         )
         
@@ -417,30 +444,71 @@ def extract_transactions_from_text(text):
         return extract_transactions_pattern_matching(text)
 
 
-def extract_transactions_pattern_matching(text):
-    """Fallback: Extract transactions using regex patterns."""
-    import re
-    transactions = []
+def extract_transactions_with_rag(text, company_id):
+    """
+    Extract and classify transactions using RAG for better context.
     
-    # Pattern for date + amount + description
-    # Example: "01/15/2024 $45.50 Grocery Store"
-    pattern = r'(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})\s+\$?([\d,]+\.\d{2})\s+(.+?)(?=\n|$)'
+    Args:
+        text: Raw text from document
+        company_id: Company ID for context retrieval
+        
+    Returns:
+        List of transactions with RAG-enhanced classification
+    """
+    # First extract basic transaction data
+    transactions = extract_transactions_from_text(text)
     
-    matches = re.findall(pattern, text, re.MULTILINE)
+    if not transactions:
+        return transactions
     
-    for match in matches:
+    logger.info(f"Enhancing {len(transactions)} transactions with RAG")
+    
+    # Enhance each transaction with RAG
+    enhanced_transactions = []
+    for trans in transactions:
         try:
-            date_str, amount_str, description = match
-            transactions.append({
-                'date': parse_date(date_str),
-                'description': description.strip(),
-                'amount': parse_amount(amount_str),
-                'confidence': 0.5  # Lower confidence for pattern matching
-            })
-        except:
-            continue
+            # Generate embedding for transaction
+            transaction_data = {
+                'description': trans.get('description', ''),
+                'vendor': trans.get('vendor', ''),
+                'amount': trans.get('amount', 0),
+                'category': trans.get('category', '')
+            }
+            
+            # Use RAG to find similar transactions and get context
+            augmented_prompt = rag_service.augment_prompt_with_context(
+                transaction_data,
+                company_id,
+                max_examples=5
+            )
+            
+            # If RAG found similar transactions, use them to improve classification
+            embedding = rag_service.generate_transaction_embedding(transaction_data)
+            
+            if embedding:
+                similar = rag_service.find_similar_transactions(
+                    embedding,
+                    company_id,
+                    top_k=3,
+                    min_similarity=0.75
+                )
+                
+                if similar:
+                    # Use the most similar transaction's account
+                    best_match = similar[0]
+                    trans['suggested_account_code'] = best_match['account_code']
+                    trans['suggested_account_name'] = best_match['account_name']
+                    trans['rag_confidence'] = best_match['similarity']
+                    trans['confidence'] = max(trans.get('confidence', 0.5), best_match['similarity'])
+                    logger.info(f"RAG matched '{trans['description']}' with {best_match['similarity']:.2%} confidence")
+            
+            enhanced_transactions.append(trans)
+            
+        except Exception as e:
+            logger.error(f"RAG enhancement failed for transaction: {e}")
+            enhanced_transactions.append(trans)  # Use original if RAG fails
     
-    return transactions
+    return enhanced_transactions
 
 
 def parse_date(date_str):

@@ -53,6 +53,11 @@ class Transaction(models.Model):
     suggested_category = models.CharField(max_length=100, blank=True)
     confidence_score = models.FloatField(null=True, blank=True, help_text="AI confidence score (0-1)")
     
+    # RAG and ML fields
+    vendor = models.CharField(max_length=255, blank=True, help_text="Vendor/merchant name")
+    category = models.CharField(max_length=100, blank=True, help_text="Transaction category")
+    embedding = models.JSONField(null=True, blank=True, help_text="Vector embedding for RAG")
+    
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
