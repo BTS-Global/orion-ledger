@@ -77,7 +77,6 @@ export default function IRSForms() {
   };
 
   const generateForm = async (formType: string) => {
-    console.log('=== GENERATE FORM CALLED ===', formType);
     if (!selectedCompany) {
       toast.error('Please select a company first');
       return;
@@ -91,7 +90,6 @@ export default function IRSForms() {
       // Normalize form type: remove hyphens for API endpoint (1099-nec -> 1099nec)
       const normalizedFormType = formType.replace(/-/g, '');
       const endpoint = `${BACKEND_URL}/api/irs-forms-api/generate-${normalizedFormType}/`;
-      console.log('Endpoint:', endpoint);
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
@@ -289,7 +287,6 @@ export default function IRSForms() {
 
         {/* Quick Actions */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={(e) => { e.preventDefault(); e.stopPropagation(); console.log('Card 5472 clicked'); generateForm('5472'); }}>
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle className="text-lg">Form 5472</CardTitle>
@@ -304,7 +301,6 @@ export default function IRSForms() {
             </CardContent>
           </Card>
 
-          <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={(e) => { e.preventDefault(); e.stopPropagation(); console.log('Card 1099-NEC clicked'); generateForm('1099-nec'); }}>
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle className="text-lg">Form 1099-NEC</CardTitle>
@@ -319,7 +315,6 @@ export default function IRSForms() {
             </CardContent>
           </Card>
 
-          <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={(e) => { e.preventDefault(); e.stopPropagation(); console.log('Card 1120 clicked'); generateForm('1120'); }}>
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle className="text-lg">Form 1120</CardTitle>
@@ -334,7 +329,6 @@ export default function IRSForms() {
             </CardContent>
           </Card>
 
-          <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={(e) => { e.preventDefault(); e.stopPropagation(); console.log('Card 1040 clicked'); generateForm('1040'); }}>
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle className="text-lg">Form 1040</CardTitle>

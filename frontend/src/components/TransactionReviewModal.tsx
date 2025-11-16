@@ -4,6 +4,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from 'sonner';
 import { BACKEND_URL } from '@/config/api';
 import { getCsrfTokenFromCookie } from '@/hooks/useCsrfToken';
+import logger from '@/utils/logger';
 
 interface Transaction {
   date: string;
@@ -49,20 +50,16 @@ export function TransactionReviewModal({ document, onClose, onImportComplete, cs
 
   const fetchAccounts = async () => {
     try {
-      console.log('[DEBUG Modal] Fetching accounts from:', `${BACKEND_URL}/api/accounts/`);
+      logger.dev('Fetching accounts from API');
       const response = await fetch(`${BACKEND_URL}/api/accounts/`, {
         credentials: 'include',
       });
-      console.log('[DEBUG Modal] Response status:', response.status);
       const data = await response.json();
-      console.log('[DEBUG Modal] Accounts data:', data);
-      console.log('[DEBUG Modal] Results:', data.results);
       const accountsList = data.results || data || [];
-      console.log('[DEBUG Modal] Setting accounts:', accountsList);
-      console.log('[DEBUG Modal] Accounts count:', accountsList.length);
+      logger.dev('Loaded accounts:', accountsList.length);
       setAccounts(accountsList);
     } catch (error) {
-      console.error('[DEBUG Modal] Failed to fetch accounts:', error);
+      logger.error('Failed to fetch accounts:', error);
       toast.error('Failed to load accounts');
     }
   };
@@ -79,18 +76,17 @@ export function TransactionReviewModal({ document, onClose, onImportComplete, cs
   };
 
   const handleUpdateTransaction = (index: number, field: string, value: any) => {
-    console.log('=== UPDATE TRANSACTION ===', { index, field, value });
+    logger.dev('Updating transaction', { index, field, value });
     setTransactions(prev => {
       const updated = prev.map((t, i) => 
         i === index ? { ...t, [field]: value } : t
       );
-      console.log('Updated transactions:', updated);
       return updated;
     });
   };
 
   const handleImport = async () => {
-    console.log('=== HANDLE IMPORT CALLED ===');
+    logger.dev('Starting transaction import');
     const selected = transactions.filter(t => t.selected);
     
     if (selected.length === 0) {
@@ -284,7 +280,6 @@ export function TransactionReviewModal({ document, onClose, onImportComplete, cs
                     <Select
                       value={trans.account || ''}
                       onValueChange={(value) => {
-                        console.log('[SELECT] Changed to:', value, 'for transaction', idx);
                         handleUpdateTransaction(idx, 'account', value);
                       }}
                       disabled={!trans.selected}

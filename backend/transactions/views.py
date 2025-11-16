@@ -21,13 +21,25 @@ class TransactionViewSet(viewsets.ModelViewSet):
     serializer_class = TransactionSerializer
     
     def get_queryset(self):
-        """Return transactions for companies accessible to the current user."""
+        """Return transactions for companies accessible to the current user with optimized queries."""
         if self.request.user.is_authenticated:
             user = self.request.user
             accessible_companies = Company.objects.filter(owner=user) | Company.objects.filter(users=user)
             queryset = Transaction.objects.filter(company__in=accessible_companies)
         else:
             queryset = Transaction.objects.all()
+        
+        # Optimize queries with select_related and prefetch_related
+        queryset = queryset.select_related(
+            'company',
+            'account',
+            'document',
+            'validated_by'
+        ).prefetch_related(
+            'journal_entries',
+            'journal_entries__lines',
+            'journal_entries__lines__account'
+        )
         
         # Filter by company if provided
         company_id = self.request.query_params.get('company', None)
@@ -47,7 +59,8 @@ class TransactionViewSet(viewsets.ModelViewSet):
         if end_date:
             queryset = queryset.filter(date__lte=end_date)
         
-        return queryset
+        # Order by date descending (most recent first)
+        return queryset.order_by('-date', '-created_at')
     
     @action(detail=False, methods=['get'])
     def pending(self, request):

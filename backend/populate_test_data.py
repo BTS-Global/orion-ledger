@@ -2,6 +2,7 @@ import os
 import django
 from datetime import datetime, timedelta
 from decimal import Decimal
+import logging
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'backend.settings')
 django.setup()
@@ -11,7 +12,10 @@ from companies.models import Company, ChartOfAccounts
 from transactions.models import Transaction, JournalEntry, JournalEntryLine
 from documents.models import Document
 
-print("🚀 Populating database with test data...")
+logging.basicConfig(level=logging.INFO, format='%(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+
+logger.info("Starting database population with test data...")
 
 # Get or create test user
 user, created = User.objects.get_or_create(
@@ -25,7 +29,7 @@ user, created = User.objects.get_or_create(
 if created:
     user.set_password('admin123')
     user.save()
-print(f"✅ User: {user.username}")
+logger.info(f"✅ User: {user.username}")
 
 # Create test company
 from datetime import date
@@ -43,7 +47,7 @@ company, created = Company.objects.get_or_create(
         'owner': user
     }
 )
-print(f"✅ Company: {company.name}")
+logger.info(f"✅ Company: {company.name}")
 
 # Create Chart of Accounts
 accounts_data = [
@@ -78,7 +82,7 @@ for code, name, acc_type, desc in accounts_data:
     )
     accounts[code] = account
     if created:
-        print(f"  ✓ Account: {code} - {name}")
+        logger.info(f"  ✓ Account: {code} - {name}")
 
 # Create sample transactions
 transactions_data = [
@@ -143,7 +147,7 @@ transactions_data = [
     },
 ]
 
-print("\n📝 Creating transactions...")
+logger.info("\n📝 Creating transactions...")
 for trans_data in transactions_data:
     # Create transaction
     transaction, created = Transaction.objects.get_or_create(
@@ -184,7 +188,7 @@ for trans_data in transactions_data:
             credit=trans_data['amount']
         )
         
-        print(f"  ✓ {trans_data['description']}: ${trans_data['amount']}")
+        logger.info(f"  ✓ {trans_data['description']}: ${trans_data['amount']}")
 
 # Create sample document
 doc, created = Document.objects.get_or_create(
@@ -199,13 +203,13 @@ doc, created = Document.objects.get_or_create(
     }
 )
 if created:
-    print(f"\n📄 Document: {doc.file_name}")
+    logger.info(f"\n📄 Document: {doc.file_name}")
 
-print("\n✅ Database populated successfully!")
-print(f"\n📊 Summary:")
-print(f"  - Company: {company.name}")
-print(f"  - Accounts: {ChartOfAccounts.objects.filter(company=company).count()}")
-print(f"  - Transactions: {Transaction.objects.filter(company=company).count()}")
-print(f"  - Journal Entries: {JournalEntry.objects.filter(company=company).count()}")
-print(f"  - Documents: {Document.objects.filter(company=company).count()}")
+logger.info("\n✅ Database populated successfully!")
+logger.info(f"\n📊 Summary:")
+logger.info(f"  - Company: {company.name}")
+logger.info(f"  - Accounts: {ChartOfAccounts.objects.filter(company=company).count()}")
+logger.info(f"  - Transactions: {Transaction.objects.filter(company=company).count()}")
+logger.info(f"  - Journal Entries: {JournalEntry.objects.filter(company=company).count()}")
+logger.info(f"  - Documents: {Document.objects.filter(company=company).count()}")
 

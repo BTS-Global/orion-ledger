@@ -376,7 +376,6 @@ export default function Accounts() {
             <AccountHierarchyTree 
               companyId={filterCompany}
               onAccountSelect={(account) => {
-                console.log('Selected account:', account);
                 // Aqui você pode adicionar lógica adicional ao selecionar uma conta
               }}
             />

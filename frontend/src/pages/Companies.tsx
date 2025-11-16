@@ -141,10 +141,8 @@ export default function Companies() {
   };
 
   const handleActivate = async (id: string, name: string) => {
-    console.log('handleActivate called', { id, name });
     try {
       const token = csrfToken || getCsrfTokenFromCookie();
-      console.log('CSRF token:', token);
       const response = await fetch(`${BACKEND_URL}/api/companies/${id}/activate/`, {
         method: 'POST',
         headers: {
@@ -153,9 +151,7 @@ export default function Companies() {
         credentials: 'include',
       });
 
-      console.log('Response status:', response.status);
       const data = await response.json();
-      console.log('Response data:', data);
 
       if (response.ok) {
         toast.success(data.message || `${name} is now your active company`);

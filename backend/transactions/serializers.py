@@ -1,9 +1,11 @@
 from rest_framework import serializers
 from .models import Transaction, JournalEntry, JournalEntryLine
+from datetime import date
+from decimal import Decimal
 
 
 class TransactionSerializer(serializers.ModelSerializer):
-    """Serializer for Transaction model."""
+    """Serializer for Transaction model with comprehensive validation."""
     
     account_name = serializers.CharField(source='account.account_name', read_only=True)
     account_code = serializers.CharField(source='account.account_code', read_only=True)
@@ -25,6 +27,45 @@ class TransactionSerializer(serializers.ModelSerializer):
             'suggested_category', 'confidence_score',
             'created_at', 'updated_at'
         ]
+    
+    def validate_date(self, value):
+        """Validate transaction date is not in the future."""
+        if value > date.today():
+            raise serializers.ValidationError(
+                "Transaction date cannot be in the future."
+            )
+        # Allow dates up to 10 years in the past
+        ten_years_ago = date.today().replace(year=date.today().year - 10)
+        if value < ten_years_ago:
+            raise serializers.ValidationError(
+                "Transaction date cannot be more than 10 years in the past."
+            )
+        return value
+    
+    def validate_amount(self, value):
+        """Validate transaction amount is valid."""
+        if value == 0:
+            raise serializers.ValidationError(
+                "Transaction amount cannot be zero."
+            )
+        # Check for reasonable maximum (1 billion)
+        if abs(value) > Decimal('1000000000'):
+            raise serializers.ValidationError(
+                "Transaction amount exceeds maximum allowed value."
+            )
+        return value
+    
+    def validate_description(self, value):
+        """Validate description is not empty or whitespace."""
+        if not value or not value.strip():
+            raise serializers.ValidationError(
+                "Description cannot be empty."
+            )
+        if len(value.strip()) < 3:
+            raise serializers.ValidationError(
+                "Description must be at least 3 characters long."
+            )
+        return value.strip()
 
 
 class TransactionValidateSerializer(serializers.Serializer):

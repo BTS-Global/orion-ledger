@@ -30,10 +30,14 @@ class TrialBalanceService:
         if end_date is None:
             end_date = timezone.now().date()
         
-        # Get all active accounts
+        # Get all active accounts with optimized query
         accounts = ChartOfAccounts.objects.filter(
             company=company,
             is_active=True
+        ).select_related('company').prefetch_related(
+            'journal_entry_lines',
+            'journal_entry_lines__journal_entry',
+            'journal_entry_lines__journal_entry__transaction'
         ).order_by('account_code')
         
         trial_balance_data = []
