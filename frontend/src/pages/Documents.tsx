@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { Progress } from "@/components/ui/progress";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -17,10 +18,11 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from 'sonner';
 import { TransactionReviewModal } from '@/components/TransactionReviewModal';
+import { DocumentReviewModal } from '@/components/DocumentReviewModal';
 import { useCsrfToken, getCsrfTokenFromCookie } from '@/hooks/useCsrfToken';
 import { InfoTooltip } from "@/components/InfoTooltip";
 import { DOCUMENT_UPLOAD_TOOLTIPS } from "@/lib/tooltips";
-import { Search, FileText, Upload, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, FileText, Upload, ChevronLeft, ChevronRight, RotateCw, CheckCircle2 } from "lucide-react";
 import { BACKEND_URL } from '@/config/api';
 
 interface Document {
@@ -43,8 +45,9 @@ interface Company {
 }
 
 const STATUS_COLORS: Record<string, string> = {
-  'PENDING': 'bg-yellow-100 text-yellow-800 border-yellow-300',
+  'UPLOADED': 'bg-gray-100 text-gray-800 border-gray-300',
   'PROCESSING': 'bg-blue-100 text-blue-800 border-blue-300',
+  'READY_FOR_REVIEW': 'bg-purple-100 text-purple-800 border-purple-300',
   'COMPLETED': 'bg-green-100 text-green-800 border-green-300',
   'FAILED': 'bg-red-100 text-red-800 border-red-300',
 };
@@ -68,6 +71,8 @@ export default function Documents() {
   const [uploading, setUploading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
+  const [reviewModalOpen, setReviewModalOpen] = useState(false);
+  const [reviewDocumentId, setReviewDocumentId] = useState<string | null>(null);
   
   // Filters
   const [searchQuery, setSearchQuery] = useState('');
@@ -521,6 +526,19 @@ export default function Documents() {
                           View Document
                         </Button>
                         
+                        {doc.status === 'READY_FOR_REVIEW' && (
+                          <Button
+                            size="sm"
+                            className="bg-blue-600 hover:bg-blue-700"
+                            onClick={() => {
+                              setReviewDocumentId(doc.id);
+                              setReviewModalOpen(true);
+                            }}
+                          >
+                            Review Transactions
+                          </Button>
+                        )}
+                        
                         {doc.status === 'COMPLETED' && doc.processing_result && doc.processing_result.transactions_count > 0 && (
                           <Button
                             size="sm"
@@ -621,7 +639,24 @@ export default function Documents() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Transaction Review Modal */}
+      {/* New Transaction Review Modal */}
+      {reviewDocumentId && (
+        <DocumentReviewModal
+          documentId={reviewDocumentId}
+          open={reviewModalOpen}
+          onOpenChange={(open) => {
+            setReviewModalOpen(open);
+            if (!open) {
+              setReviewDocumentId(null);
+            }
+          }}
+          onConfirm={() => {
+            fetchDocuments();
+          }}
+        />
+      )}
+
+      {/* Legacy Transaction Review Modal */}
       {selectedDocument && (
         <TransactionReviewModal
           document={selectedDocument}

@@ -111,9 +111,18 @@ class DocumentViewSet(viewsets.ModelViewSet):
         """Reprocess a failed or completed document."""
         document = self.get_object()
         
+        # Check if can retry
+        if not document.can_retry():
+            return Response(
+                {'error': 'Maximum retry attempts reached'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
         # Reset status
-        document.status = 'PENDING'
+        document.status = 'UPLOADED'
         document.error_message = None
+        document.error_log = None
+        document.processing_progress = {}
         document.save()
         
         # Trigger async processing task
@@ -123,5 +132,86 @@ class DocumentViewSet(viewsets.ModelViewSet):
         return Response({
             'message': 'Document reprocessing started',
             'document_id': str(document.id)
+        })
+    
+    @action(detail=True, methods=['get'])
+    def extracted_data(self, request, pk=None):
+        """Get extracted transactions for review."""
+        document = self.get_object()
+        
+        if document.status != 'READY_FOR_REVIEW':
+            return Response(
+                {'error': 'Document is not ready for review'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        return Response({
+            'document_id': str(document.id),
+            'file_name': document.file_name,
+            'status': document.status,
+            'extracted_data': document.extracted_data,
+            'transactions': document.extracted_data.get('transactions', []),
+            'validation': document.extracted_data.get('validation', {})
+        })
+    
+    @action(detail=True, methods=['post'])
+    def confirm_transactions(self, request, pk=None):
+        """Confirm and create transactions from extracted data."""
+        document = self.get_object()
+        
+        if document.status != 'READY_FOR_REVIEW':
+            return Response(
+                {'error': 'Document is not ready for review'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Get transactions to create (can be edited by user)
+        transactions_data = request.data.get('transactions', [])
+        
+        if not transactions_data:
+            # Use extracted data if no modifications
+            transactions_data = document.extracted_data.get('transactions', [])
+        
+        # Create transactions
+        from documents.tasks import create_transactions_from_result
+        created_count = create_transactions_from_result(
+            document,
+            {'transactions': transactions_data}
+        )
+        
+        # Update document status
+        document.status = 'COMPLETED'
+        document.save()
+        
+        return Response({
+            'message': f'{created_count} transactions created successfully',
+            'transactions_created': created_count
+        })
+    
+    @action(detail=True, methods=['post'])
+    def reject_transactions(self, request, pk=None):
+        """Reject extracted transactions."""
+        document = self.get_object()
+        
+        # Mark as completed without creating transactions
+        document.status = 'COMPLETED'
+        document.extracted_data = {}
+        document.save()
+        
+        return Response({
+            'message': 'Transactions rejected'
+        })
+    
+    @action(detail=True, methods=['get'])
+    def progress(self, request, pk=None):
+        """Get processing progress."""
+        document = self.get_object()
+        
+        return Response({
+            'document_id': str(document.id),
+            'status': document.status,
+            'processing_progress': document.processing_progress,
+            'processing_attempts': document.processing_attempts,
+            'can_retry': document.can_retry()
         })
 

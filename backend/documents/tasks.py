@@ -13,23 +13,35 @@ import csv
 import io
 from datetime import datetime
 from decimal import Decimal
+import logging
+import traceback
 
 from .models import Document
+from .validators import TransactionValidator, LLMResponseValidator
 from transactions.models import Transaction
 from companies.models import ChartOfAccounts
 
+logger = logging.getLogger(__name__)
 
-@shared_task
-def process_document(document_id):
+
+@shared_task(bind=True, max_retries=3)
+def process_document(self, document_id):
     """
-    Process uploaded document and extract transaction data.
+    Process uploaded document and extract transaction data with improved error handling.
     """
+    document = None
     try:
         document = Document.objects.get(id=document_id)
+        logger.info(f"Starting processing for document {document_id}: {document.file_name}")
+        
+        # Update status to PROCESSING
         document.status = 'PROCESSING'
-        document.save()
+        document.update_progress('initializing', 5, 'Starting document processing')
         
         file_type = document.file_type.upper()
+        
+        # Process based on file type
+        document.update_progress('extracting', 20, f'Extracting data from {file_type}')
         
         if file_type == 'CSV':
             result = process_csv(document)
@@ -40,34 +52,62 @@ def process_document(document_id):
         else:
             raise ValueError(f"Unsupported file type: {file_type}")
         
-        # Save processing result
+        # Validate extracted transactions
+        document.update_progress('validating', 60, 'Validating extracted transactions')
+        transactions = result.get('transactions', [])
+        
+        if transactions:
+            validation_result = TransactionValidator.validate_all_transactions(transactions)
+            logger.info(f"Validation result: {validation_result['valid_count']}/{validation_result['total']} valid")
+            
+            result['validation'] = validation_result
+            
+            # Filter only valid transactions
+            valid_transactions = [
+                trans for trans in transactions
+                if TransactionValidator.validate_extracted_transaction(trans)[0]
+            ]
+            result['transactions'] = valid_transactions
+            result['transactions_count'] = len(valid_transactions)
+        
+        # Save extracted data for review
+        document.update_progress('saving', 80, 'Saving extracted data')
+        document.extracted_data = result
         document.processing_result = result
-        document.status = 'COMPLETED'
+        document.status = 'READY_FOR_REVIEW'
         document.processed_date = timezone.now()
         document.save()
         
-        # Create transactions from extracted data
-        create_transactions_from_result(document, result)
+        document.update_progress('completed', 100, 'Processing completed successfully')
+        
+        logger.info(f"Document {document_id} processed successfully. {result.get('transactions_count', 0)} transactions extracted")
         
         return {
             'status': 'success',
             'document_id': str(document_id),
-            'transactions_created': result.get('transactions_count', 0)
+            'transactions_extracted': result.get('transactions_count', 0),
+            'validation': result.get('validation', {})
         }
         
     except Document.DoesNotExist:
+        logger.error(f"Document {document_id} not found")
         return {'status': 'error', 'message': 'Document not found'}
-    except Exception as e:
-        # Mark document as failed
-        try:
-            document = Document.objects.get(id=document_id)
-            document.status = 'FAILED'
-            document.error_message = str(e)
-            document.save()
-        except:
-            pass
         
-        return {'status': 'error', 'message': str(e)}
+    except Exception as e:
+        error_msg = str(e)
+        error_trace = traceback.format_exc()
+        logger.error(f"Error processing document {document_id}: {error_msg}\n{error_trace}")
+        
+        # Log error in document
+        if document:
+            document.log_error(error_msg, error_type=type(e).__name__)
+            
+            # Retry if possible
+            if document.can_retry():
+                logger.info(f"Retrying document {document_id} (attempt {document.processing_attempts + 1})")
+                raise self.retry(exc=e, countdown=60)  # Retry after 1 minute
+        
+        return {'status': 'error', 'message': error_msg, 'trace': error_trace}
 
 
 def process_csv(document):
@@ -322,64 +362,57 @@ def extract_transactions_from_text(text):
         from openai import OpenAI
         from django.conf import settings
         
+        logger.info("Starting LLM-based transaction extraction")
+        
         # Initialize Manus API client (OpenAI-compatible)
-        # API key and base URL are already configured in environment variables
         client = OpenAI()
         
-        # Prepare prompt
-        prompt = f"""Extract all financial transactions from the following text.
-For each transaction, provide:
-- date (YYYY-MM-DD format)
-- description
-- amount (positive for income/deposits, negative for expenses/withdrawals)
-- category (if identifiable)
-
-Text:
-{text[:4000]}
-
-Return ONLY a JSON array of transactions, no other text. Example format:
-[{{"date": "2024-01-15", "description": "Grocery Store", "amount": -45.50, "category": "Groceries"}}]
-"""
+        # Create improved prompt with few-shot examples
+        prompt = LLMResponseValidator.create_improved_prompt(text, max_length=4000)
         
         # Call Manus API (OpenAI-compatible)
         response = client.chat.completions.create(
             model="gpt-4.1-mini",  # Manus model: fast and efficient
             messages=[
-                {"role": "system", "content": "You are a financial data extraction assistant. Extract transaction data and return only valid JSON."},
+                {
+                    "role": "system", 
+                    "content": "You are a financial data extraction assistant. Extract transaction data and return ONLY a valid JSON array, no other text or explanation."
+                },
                 {"role": "user", "content": prompt}
             ],
-            temperature=0.1,
-            max_tokens=2000
+            temperature=0.3,  # Increased for better pattern recognition
+            max_tokens=3000
         )
         
         # Parse response
         result_text = response.choices[0].message.content.strip()
+        logger.info(f"LLM returned response of length: {len(result_text)}")
         
-        # Remove markdown code blocks if present
-        if result_text.startswith('```'):
-            result_text = result_text.split('```')[1]
-            if result_text.startswith('json'):
-                result_text = result_text[4:]
+        # Validate and parse LLM response
+        validated_transactions = LLMResponseValidator.validate_llm_json_response(result_text)
         
-        # Parse JSON
-        transactions = json.loads(result_text)
+        if validated_transactions is None:
+            logger.warning("LLM response validation failed, falling back to pattern matching")
+            return extract_transactions_pattern_matching(text)
         
-        # Validate and clean transactions
+        # Clean and normalize transactions
         cleaned_transactions = []
-        for trans in transactions:
+        for trans in validated_transactions:
             if 'date' in trans and 'amount' in trans:
                 cleaned_transactions.append({
                     'date': trans['date'],
                     'description': trans.get('description', 'Transaction'),
-                    'amount': float(trans['amount']),  # Convert to float for JSON serialization
-                    'category': trans.get('category'),
-                    'confidence': 0.8  # LLM extraction confidence
+                    'amount': float(trans['amount']),
+                    'category': trans.get('category', ''),
+                    'vendor': trans.get('vendor', ''),
+                    'confidence': trans.get('confidence', 0.8)
                 })
         
+        logger.info(f"Successfully extracted {len(cleaned_transactions)} transactions via LLM")
         return cleaned_transactions
         
     except Exception as e:
-        print(f"LLM extraction failed: {e}")
+        logger.error(f"LLM extraction failed: {e}", exc_info=True)
         # Fallback to pattern matching
         return extract_transactions_pattern_matching(text)
 
@@ -459,8 +492,12 @@ def parse_amount(amount_str):
 
 
 def create_transactions_from_result(document, result):
-    """Create Transaction objects from processing result."""
+    """
+    Create Transaction objects from processing result.
+    Note: This function is now called explicitly after user review.
+    """
     transactions_data = result.get('transactions', [])
+    created_count = 0
     
     for trans_data in transactions_data:
         try:
@@ -475,11 +512,15 @@ def create_transactions_from_result(document, result):
                 description=trans_data.get('description', 'Extracted transaction'),
                 amount=amount,
                 is_validated=False,
-                suggested_category=trans_data.get('category', ''),  # Provide empty string if None
+                suggested_category=trans_data.get('category', ''),
                 confidence_score=trans_data.get('confidence', 0.5)
             )
+            created_count += 1
+            
         except Exception as e:
-            # Log error but continue processing other transactions
-            print(f"Error creating transaction: {e}")
+            logger.error(f"Error creating transaction: {e}")
             continue
+    
+    logger.info(f"Created {created_count} transactions from document {document.id}")
+    return created_count
 
