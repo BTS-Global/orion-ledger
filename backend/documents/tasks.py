@@ -312,18 +312,19 @@ def extract_transactions_from_table(table):
 
 
 def extract_transactions_from_text(text):
-    """Extract transactions from plain text using OpenAI API."""
+    """Extract transactions from plain text using Manus LLM API (OpenAI-compatible)."""
     transactions = []
     
     if not text or not text.strip():
         return transactions
     
     try:
-        import openai
+        from openai import OpenAI
         from django.conf import settings
         
-        # Configure OpenAI
-        openai.api_key = settings.OPENAI_API_KEY
+        # Initialize Manus API client (OpenAI-compatible)
+        # API key and base URL are already configured in environment variables
+        client = OpenAI()
         
         # Prepare prompt
         prompt = f"""Extract all financial transactions from the following text.
@@ -340,9 +341,9 @@ Return ONLY a JSON array of transactions, no other text. Example format:
 [{{"date": "2024-01-15", "description": "Grocery Store", "amount": -45.50, "category": "Groceries"}}]
 """
         
-        # Call OpenAI API
-        response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
+        # Call Manus API (OpenAI-compatible)
+        response = client.chat.completions.create(
+            model="gpt-4.1-mini",  # Manus model: fast and efficient
             messages=[
                 {"role": "system", "content": "You are a financial data extraction assistant. Extract transaction data and return only valid JSON."},
                 {"role": "user", "content": prompt}
@@ -372,13 +373,13 @@ Return ONLY a JSON array of transactions, no other text. Example format:
                     'description': trans.get('description', 'Transaction'),
                     'amount': float(trans['amount']),  # Convert to float for JSON serialization
                     'category': trans.get('category'),
-                    'confidence': 0.8  # OpenAI extraction confidence
+                    'confidence': 0.8  # LLM extraction confidence
                 })
         
         return cleaned_transactions
         
     except Exception as e:
-        print(f"OpenAI extraction failed: {e}")
+        print(f"LLM extraction failed: {e}")
         # Fallback to pattern matching
         return extract_transactions_pattern_matching(text)
 

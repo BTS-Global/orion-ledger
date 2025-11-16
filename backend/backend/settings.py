@@ -191,7 +191,9 @@ CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = TIME_ZONE
 
-# OpenAI Configuration
+# Manus LLM API Configuration (OpenAI-compatible)
+# API key and base URL are configured in environment variables
+# Available models: gpt-4.1-mini, gpt-4.1-nano, gemini-2.5-flash
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY', '')
 
 # Django Sites Framework
