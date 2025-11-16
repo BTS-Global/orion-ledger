@@ -7,52 +7,100 @@ export default {
   ],
   theme: {
     extend: {
-      borderRadius: {
-        lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)",
+      // BTS Design System - Font Family
+      fontFamily: {
+        sans: ['"Montserrat"', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', '"Helvetica Neue"', 'Arial', 'sans-serif'],
+        mono: ['"Fira Code"', '"Courier New"', 'Courier', 'monospace'],
       },
+      
+      // BTS Design System - Colors
       colors: {
-        background: "hsl(var(--background))",
-        foreground: "hsl(var(--foreground))",
+        // Primary Brand Colors
+        'bts-blue': '#1B3857',
+        'bts-blue-highlight': '#1B5AB4',
+        'bts-white': '#FFFFFF',
+        'bts-black': '#000000',
+        
+        // Secondary Colors
+        'bts-blue-c01': '#1B3857',
+        'bts-blue-c02': '#1B4668',
+        'bts-blue-503': '#0C80A5',
+        'bts-blue-c04': '#2A7BA1',
+        'bts-blue-505': '#63C9F3',
+        'bts-gray-506': '#B2B2B2',
+        
+        // Neutral Colors
+        'bts-gray-light': '#E4E4E4',
+        'bts-gray-semi-light': '#C9C9C9',
+        'bts-gray-base': '#C6C6C6',
+        'bts-gray-semi-dark': '#9B9B9B',
+        'bts-gray-dark': '#595757',
+        'bts-neutral-black': '#333333',
+        
+        // Feedback Colors
+        'bts-success': '#2E8B2E',
+        'bts-warning': '#FFD700',
+        'bts-error': '#E63939',
+        'bts-info': '#0C80A5',
+        
+        // Shadcn compatibility (mapped to BTS colors)
+        background: '#FFFFFF',
+        foreground: '#000000',
         card: {
-          DEFAULT: "hsl(var(--card))",
-          foreground: "hsl(var(--card-foreground))",
+          DEFAULT: '#FFFFFF',
+          foreground: '#000000',
         },
         popover: {
-          DEFAULT: "hsl(var(--popover))",
-          foreground: "hsl(var(--popover-foreground))",
+          DEFAULT: '#FFFFFF',
+          foreground: '#000000',
         },
         primary: {
-          DEFAULT: "hsl(var(--primary))",
-          foreground: "hsl(var(--primary-foreground))",
+          DEFAULT: '#1B5AB4',
+          foreground: '#FFFFFF',
         },
         secondary: {
-          DEFAULT: "hsl(var(--secondary))",
-          foreground: "hsl(var(--secondary-foreground))",
+          DEFAULT: '#1B3857',
+          foreground: '#FFFFFF',
         },
         muted: {
-          DEFAULT: "hsl(var(--muted))",
-          foreground: "hsl(var(--muted-foreground))",
+          DEFAULT: '#E4E4E4',
+          foreground: '#595757',
         },
         accent: {
-          DEFAULT: "hsl(var(--accent))",
-          foreground: "hsl(var(--accent-foreground))",
+          DEFAULT: '#63C9F3',
+          foreground: '#000000',
         },
         destructive: {
-          DEFAULT: "hsl(var(--destructive))",
-          foreground: "hsl(var(--destructive-foreground))",
+          DEFAULT: '#E63939',
+          foreground: '#FFFFFF',
         },
-        border: "hsl(var(--border))",
-        input: "hsl(var(--input))",
-        ring: "hsl(var(--ring))",
+        border: '#C6C6C6',
+        input: '#C6C6C6',
+        ring: '#1B5AB4',
         chart: {
-          "1": "hsl(var(--chart-1))",
-          "2": "hsl(var(--chart-2))",
-          "3": "hsl(var(--chart-3))",
-          "4": "hsl(var(--chart-4))",
-          "5": "hsl(var(--chart-5))",
+          "1": '#1B5AB4',
+          "2": '#0C80A5',
+          "3": '#63C9F3',
+          "4": '#2A7BA1',
+          "5": '#1B4668',
         },
+      },
+      
+      // BTS Design System - Border Radius
+      borderRadius: {
+        lg: '0.5rem',
+        md: '0.375rem',
+        sm: '0.25rem',
+      },
+      
+      // BTS Design System - Shadows
+      boxShadow: {
+        sm: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+        DEFAULT: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
+        md: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+        lg: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+        xl: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+        '2xl': '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
       },
     },
   },

@@ -3,170 +3,151 @@
 
 @custom-variant dark (&:is(.dark *));
 
-@theme inline {
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-destructive: var(--destructive);
-  --color-destructive-foreground: var(--destructive-foreground);
-  --color-border: var(--border);
-  --color-input: var(--input);
-  --color-ring: var(--ring);
-  --color-chart-1: var(--chart-1);
-  --color-chart-2: var(--chart-2);
-  --color-chart-3: var(--chart-3);
-  --color-chart-4: var(--chart-4);
-  --color-chart-5: var(--chart-5);
-  --color-sidebar: var(--sidebar);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-ring: var(--sidebar-ring);
-}
+/* ============================================
+   BTS DESIGN SYSTEM - CSS VARIABLES
+   ============================================ */
 
 :root {
-  --primary: var(--color-blue-700);
-  --primary-foreground: var(--color-blue-50);
-  --sidebar-primary: var(--color-blue-600);
-  --sidebar-primary-foreground: var(--color-blue-50);
-  --chart-1: var(--color-blue-300);
-  --chart-2: var(--color-blue-500);
-  --chart-3: var(--color-blue-600);
-  --chart-4: var(--color-blue-700);
-  --chart-5: var(--color-blue-800);
-  --radius: 0.65rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.235 0.015 65);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.235 0.015 65);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.235 0.015 65);
-  --secondary: oklch(0.98 0.001 286.375);
-  --secondary-foreground: oklch(0.4 0.015 65);
-  --muted: oklch(0.967 0.001 286.375);
-  --muted-foreground: oklch(0.552 0.016 285.938);
-  --accent: oklch(0.967 0.001 286.375);
-  --accent-foreground: oklch(0.141 0.005 285.823);
-  --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.985 0 0);
-  --border: oklch(0.92 0.004 286.32);
-  --input: oklch(0.92 0.004 286.32);
-  --ring: oklch(0.623 0.214 259.815);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.235 0.015 65);
-  --sidebar-accent: oklch(0.967 0.001 286.375);
-  --sidebar-accent-foreground: oklch(0.141 0.005 285.823);
-  --sidebar-border: oklch(0.92 0.004 286.32);
-  --sidebar-ring: oklch(0.623 0.214 259.815);
+  /* Primary Brand Colors */
+  --bts-blue: #1B3857;
+  --bts-blue-highlight: #1B5AB4;
+  --bts-white: #FFFFFF;
+  --bts-black: #000000;
+  
+  /* Secondary Colors */
+  --bts-blue-c01: #1B3857;
+  --bts-blue-c02: #1B4668;
+  --bts-blue-503: #0C80A5;
+  --bts-blue-c04: #2A7BA1;
+  --bts-blue-505: #63C9F3;
+  --bts-gray-506: #B2B2B2;
+  
+  /* Neutral Colors */
+  --bts-gray-light: #E4E4E4;
+  --bts-gray-semi-light: #C9C9C9;
+  --bts-gray-base: #C6C6C6;
+  --bts-gray-semi-dark: #9B9B9B;
+  --bts-gray-dark: #595757;
+  --bts-neutral-black: #333333;
+  
+  /* Feedback Colors */
+  --bts-success: #2E8B2E;
+  --bts-warning: #FFD700;
+  --bts-error: #E63939;
+  --bts-info: #0C80A5;
+  
+  /* Typography */
+  --font-family-primary: "Montserrat", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  
+  /* Shadcn UI Compatibility - Mapped to BTS Colors */
+  --background: #FFFFFF;
+  --foreground: #000000;
+  
+  --card: #FFFFFF;
+  --card-foreground: #000000;
+  
+  --popover: #FFFFFF;
+  --popover-foreground: #000000;
+  
+  --primary: #1B5AB4;
+  --primary-foreground: #FFFFFF;
+  
+  --secondary: #1B3857;
+  --secondary-foreground: #FFFFFF;
+  
+  --muted: #E4E4E4;
+  --muted-foreground: #595757;
+  
+  --accent: #63C9F3;
+  --accent-foreground: #000000;
+  
+  --destructive: #E63939;
+  --destructive-foreground: #FFFFFF;
+  
+  --border: #C6C6C6;
+  --input: #C6C6C6;
+  --ring: #1B5AB4;
+  
+  /* Chart Colors - BTS Blue Palette */
+  --chart-1: #1B5AB4;
+  --chart-2: #0C80A5;
+  --chart-3: #63C9F3;
+  --chart-4: #2A7BA1;
+  --chart-5: #1B4668;
+  
+  /* Sidebar - BTS Blue */
+  --sidebar: #1B3857;
+  --sidebar-foreground: #FFFFFF;
+  --sidebar-primary: #1B5AB4;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #63C9F3;
+  --sidebar-accent-foreground: #000000;
+  --sidebar-border: #1B4668;
+  --sidebar-ring: #1B5AB4;
+  
+  /* Border Radius */
+  --radius: 0.5rem;
 }
 
+/* Dark mode (se necessário no futuro) */
 .dark {
-  --primary: var(--color-blue-700);
-  --primary-foreground: var(--color-blue-50);
-  --sidebar-primary: var(--color-blue-500);
-  --sidebar-primary-foreground: var(--color-blue-50);
-  --background: oklch(0.141 0.005 285.823);
-  --foreground: oklch(0.85 0.005 65);
-  --card: oklch(0.21 0.006 285.885);
-  --card-foreground: oklch(0.85 0.005 65);
-  --popover: oklch(0.21 0.006 285.885);
-  --popover-foreground: oklch(0.85 0.005 65);
-  --secondary: oklch(0.24 0.006 286.033);
-  --secondary-foreground: oklch(0.7 0.005 65);
-  --muted: oklch(0.274 0.006 286.033);
-  --muted-foreground: oklch(0.705 0.015 286.067);
-  --accent: oklch(0.274 0.006 286.033);
-  --accent-foreground:  oklch(0.92 0.005 65);
-  --destructive: oklch(0.704 0.191 22.216);
-  --destructive-foreground: oklch(0.985 0 0);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.488 0.243 264.376);
-  --chart-1: var(--color-blue-300);
-  --chart-2: var(--color-blue-500);
-  --chart-3: var(--color-blue-600);
-  --chart-4: var(--color-blue-700);
-  --chart-5: var(--color-blue-800);
-  --sidebar: oklch(0.21 0.006 285.885);
-  --sidebar-foreground: oklch(0.85 0.005 65);
-  --sidebar-accent: oklch(0.274 0.006 286.033);
-  --sidebar-accent-foreground:  oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.488 0.243 264.376);
+  --background: #1B3857;
+  --foreground: #FFFFFF;
+  
+  --card: #1B4668;
+  --card-foreground: #FFFFFF;
+  
+  --popover: #1B4668;
+  --popover-foreground: #FFFFFF;
+  
+  --primary: #63C9F3;
+  --primary-foreground: #000000;
+  
+  --secondary: #2A7BA1;
+  --secondary-foreground: #FFFFFF;
+  
+  --muted: #1B4668;
+  --muted-foreground: #C9C9C9;
+  
+  --accent: #1B5AB4;
+  --accent-foreground: #FFFFFF;
+  
+  --destructive: #E63939;
+  --destructive-foreground: #FFFFFF;
+  
+  --border: #2A7BA1;
+  --input: #2A7BA1;
+  --ring: #63C9F3;
 }
 
-@layer base {
-  * {
-    @apply border-border outline-ring/50;
-  }
-  body {
-    @apply bg-background text-foreground;
-  }
-  button:not(:disabled),
-  [role="button"]:not([aria-disabled="true"]),
-  [type="button"]:not(:disabled),
-  [type="submit"]:not(:disabled),
-  [type="reset"]:not(:disabled),
-  a[href],
-  select:not(:disabled),
-  input[type="checkbox"]:not(:disabled),
-  input[type="radio"]:not(:disabled) {
-    @apply cursor-pointer;
-  }
+/* ============================================
+   GLOBAL STYLES
+   ============================================ */
+
+* {
+  @apply border-border;
 }
 
-@layer components {
-  /**
-   * Custom container utility that centers content and adds responsive padding.
-   *
-   * This overrides Tailwind's default container behavior to:
-   * - Auto-center content (mx-auto)
-   * - Add responsive horizontal padding
-   * - Set max-width for large screens
-   *
-   * Usage: <div className="container">...</div>
-   *
-   * For custom widths, use max-w-* utilities directly:
-   * <div className="max-w-6xl mx-auto px-4">...</div>
-   */
-  .container {
-    width: 100%;
-    margin-left: auto;
-    margin-right: auto;
-    padding-left: 1rem; /* 16px - mobile padding */
-    padding-right: 1rem;
-  }
+body {
+  @apply bg-background text-foreground;
+  font-family: var(--font-family-primary);
+}
 
-  @media (min-width: 640px) {
-    .container {
-      padding-left: 1.5rem; /* 24px - tablet padding */
-      padding-right: 1.5rem;
-    }
-  }
+/* Scrollbar customization */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
 
-  @media (min-width: 1024px) {
-    .container {
-      padding-left: 2rem; /* 32px - desktop padding */
-      padding-right: 2rem;
-      max-width: 1280px; /* Standard content width */
-    }
-  }
+::-webkit-scrollbar-track {
+  background: var(--bts-gray-light);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--bts-gray-base);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--bts-gray-semi-dark);
 }

@@ -1,4 +1,4 @@
-import { useLocation, Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { 
   LayoutDashboard, 
   FileUp, 
@@ -44,19 +44,19 @@ export default function Sidebar() {
   };
 
   return (
-    <div className="flex flex-col h-screen w-64 bg-white border-r">
-      {/* Logo/Header */}
-      <div className="p-6 border-b">
+    <div className="flex flex-col h-screen w-64 bg-bts-blue border-r border-bts-blue-c02">
+      {/* Logo/Header - BTS Design System */}
+      <div className="p-6 border-b border-bts-blue-c02">
         <div className="flex items-center gap-2">
-          <Building2 className="w-8 h-8 text-blue-600" />
+          <Building2 className="w-8 h-8 text-bts-blue-505" />
           <div>
-            <h1 className="font-bold text-lg">Accounting</h1>
-            <p className="text-xs text-muted-foreground">US Companies</p>
+            <h1 className="font-semibold text-lg text-white">Orion Ledger</h1>
+            <p className="text-xs text-bts-gray-light">US Accounting System</p>
           </div>
         </div>
       </div>
 
-      {/* Navigation */}
+      {/* Navigation - BTS Design System */}
       <nav className="flex-1 p-4 space-y-1">
         {navItems.map((item) => {
           const isActive = location === item.path || 
@@ -66,10 +66,11 @@ export default function Sidebar() {
             <Link key={item.path} href={item.path}>
               <a
                 className={`
-                  flex items-center gap-3 px-4 py-3 rounded-lg transition-colors
+                  flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200
+                  font-medium text-sm
                   ${isActive 
-                    ? 'bg-blue-50 text-blue-700 font-medium' 
-                    : 'text-gray-700 hover:bg-gray-100'
+                    ? 'bg-bts-blue-highlight text-white shadow-md' 
+                    : 'text-bts-gray-light hover:bg-bts-blue-c02 hover:text-white'
                   }
                 `}
               >
@@ -81,11 +82,11 @@ export default function Sidebar() {
         })}
       </nav>
 
-      {/* Footer */}
-      <div className="p-4 border-t">
+      {/* Footer - BTS Design System */}
+      <div className="p-4 border-t border-bts-blue-c02">
         <Button
           variant="ghost"
-          className="w-full justify-start text-gray-700"
+          className="w-full justify-start text-bts-gray-light hover:bg-bts-blue-c02 hover:text-white transition-colors"
           onClick={handleLogout}
         >
           <LogOut className="w-5 h-5 mr-3" />
@@ -95,4 +96,3 @@ export default function Sidebar() {
     </div>
   );
 }
-
