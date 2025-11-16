@@ -1,7 +1,16 @@
-@import "tailwindcss";
-@import "tw-animate-css";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-@custom-variant dark (&:is(.dark *));
+@layer base {
+  :root {
+    --radius: 0.5rem;
+  }
+  
+  .dark {
+    color-scheme: dark;
+  }
+}
 
 /* ============================================
    BTS DESIGN SYSTEM - CSS VARIABLES
