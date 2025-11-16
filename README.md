@@ -1,6 +1,8 @@
-# Orion Universal Ledger
+# Orion Ledger
 
 **Modern accounting system for US companies with AI-powered document processing and IRS form generation.**
+
+> **Monorepo Structure:** This repository contains both the Django backend and React frontend in a unified codebase.
 
 ## 🚀 Features
 
@@ -24,43 +26,43 @@
 - **Expense breakdown** - Pie chart with top 5 categories
 - **Cash runway indicator** - Visual alerts (green/yellow/red)
 
-## 📁 Project Structure
+## 📁 Monorepo Structure
 
 ```
 orion-ledger/
-├── frontend/          # React + TypeScript + Vite
+├── backend/               # Django Backend
+│   ├── backend/          # Django settings and configuration
+│   │   ├── settings.py
+│   │   ├── urls.py
+│   │   ├── celery.py
+│   │   └── wsgi.py
+│   ├── companies/        # Companies and Chart of Accounts
+│   ├── core/             # Authentication and core functionality
+│   ├── documents/        # Document upload and AI processing
+│   ├── irs_forms/        # IRS Forms generation
+│   ├── reports/          # Financial reports
+│   ├── transactions/     # Transactions and journal entries
+│   ├── manage.py
+│   ├── requirements.txt
+│   └── README.md
+│
+├── frontend/             # React Frontend
 │   ├── src/
-│   │   ├── components/    # Reusable UI components
-│   │   ├── pages/         # Page components
-│   │   ├── hooks/         # Custom React hooks
-│   │   ├── lib/           # Utilities and helpers
-│   │   └── contexts/      # React contexts
-│   └── package.json
+│   │   ├── components/  # Reusable UI components
+│   │   ├── pages/       # Page components
+│   │   ├── hooks/       # Custom React hooks
+│   │   ├── contexts/    # React contexts
+│   │   └── config/      # Configuration
+│   ├── public/
+│   ├── package.json
+│   ├── vite.config.ts
+│   └── README.md
 │
-├── backend/           # Django + PostgreSQL + Celery
-│   ├── backend/           # Django settings
-│   ├── companies/         # Company and Chart of Accounts
-│   ├── transactions/      # Transactions and Journal Entries
-│   ├── documents/         # Document upload and processing
-│   ├── irs_forms/         # IRS Forms generation
-│   └── requirements.txt
-│
-└── docs/              # Documentation
-    ├── FASE1_IMPLEMENTACOES_COMPLETAS.md
-    ├── IMPLEMENTACOES_IA_COMPLETAS_FINAL.md
-    ├── DOCUMENTS_FINAL_IMPLEMENTACOES.md
-    └── roadmap_v1.1_updated.md
+├── docs/                 # Documentation
+└── examples/             # Example files and PDFs
 ```
 
 ## 🛠️ Tech Stack
-
-### Frontend
-- **React 18** with TypeScript
-- **Vite** for fast development
-- **Tailwind CSS** for styling
-- **shadcn/ui** for UI components
-- **Recharts** for data visualization
-- **Wouter** for routing
 
 ### Backend
 - **Django 4.2** with Django REST Framework
@@ -70,28 +72,29 @@ orion-ledger/
 - **OpenAI API** (via Manus) for AI features
 - **PyPDF2** for PDF processing
 
+### Frontend
+- **React 18** with TypeScript
+- **Vite** for fast development
+- **Tailwind CSS** for styling
+- **shadcn/ui** for UI components
+- **Recharts** for data visualization
+- **Wouter** for routing
+
 ## 🚀 Quick Start
 
 ### Prerequisites
-- Node.js 22+
-- Python 3.11+
-- PostgreSQL 14+
-- Redis 7+
-
-### Frontend Setup
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-Frontend will be available at `http://localhost:3001`
+- **Node.js** 22+
+- **Python** 3.11+
+- **PostgreSQL** 14+
+- **Redis** 7+
 
 ### Backend Setup
 
 ```bash
+# Navigate to backend directory
 cd backend
+
+# Install dependencies
 pip install -r requirements.txt
 
 # Setup database
@@ -103,11 +106,26 @@ python manage.py createsuperuser
 # Run development server
 python manage.py runserver 8000
 
-# Run Celery worker (in another terminal)
+# In another terminal, run Celery worker
 celery -A backend worker -l info
 ```
 
-Backend API will be available at `http://localhost:8000`
+**Backend API:** `http://localhost:8000`
+
+### Frontend Setup
+
+```bash
+# Navigate to frontend directory
+cd frontend
+
+# Install dependencies
+npm install
+
+# Run development server
+npm run dev
+```
+
+**Frontend:** `http://localhost:3001`
 
 ## 📊 Database Schema
 
@@ -166,19 +184,29 @@ API documentation available at:
 
 ## 🧪 Testing
 
-### Frontend
-```bash
-cd frontend
-npm run test
-```
-
 ### Backend
 ```bash
 cd backend
 python manage.py test
 ```
 
+### Frontend
+```bash
+cd frontend
+npm run test
+```
+
 ## 📦 Deployment
+
+### Backend (Railway/Heroku/AWS)
+```bash
+cd backend
+# Set environment variables
+# Run migrations
+python manage.py migrate
+# Collect static files
+python manage.py collectstatic --noinput
+```
 
 ### Frontend (Vercel/Netlify)
 ```bash
@@ -187,16 +215,14 @@ npm run build
 # Deploy dist/ folder
 ```
 
-### Backend (Railway/Heroku/AWS)
-```bash
-cd backend
-# Set environment variables
-# Run migrations
-# Collect static files
-python manage.py collectstatic --noinput
-```
-
 ## 🌟 Recent Updates
+
+### Monorepo Unification (November 2025)
+- ✅ Unified `contabilidade-backend` and `orion-ledger` repositories
+- ✅ Clean structure with `/backend` and `/frontend` directories
+- ✅ No versioning conflicts (v2, old, legacy files removed)
+- ✅ Complete documentation for both backend and frontend
+- ✅ Standardized development workflow
 
 ### Version 1.1 (October 2025)
 
@@ -234,12 +260,18 @@ See `/docs` folder for detailed documentation:
 - Feature specifications
 - API documentation
 
+See also:
+- [Backend README](./backend/README.md)
+- [Frontend README](./frontend/README.md)
+
 ## 🤝 Contributing
 
 1. Fork the repository
-2. Create a feature branch
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
 3. Make your changes
-4. Submit a pull request
+4. Commit your changes (`git commit -m 'Add amazing feature'`)
+5. Push to the branch (`git push origin feature/amazing-feature`)
+6. Open a Pull Request
 
 ## 📄 License
 
@@ -255,12 +287,11 @@ MIT License - see LICENSE file for details
 ## 📞 Support
 
 For issues and questions:
-- GitHub Issues: [Create an issue](https://github.com/Byeond-The-Seas-Holding/orion-ledger/issues)
+- GitHub Issues: [Create an issue](https://github.com/BTS-Global/orion-ledger/issues)
 - Email: support@orionledger.com
 
 ---
 
 **Status:** ✅ Production Ready  
 **Version:** 1.1.0  
-**Last Updated:** October 24, 2025
-
+**Last Updated:** November 16, 2025
