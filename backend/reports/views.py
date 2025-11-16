@@ -14,6 +14,7 @@ from weasyprint import HTML
 from companies.models import Company
 from transactions.accounting_service import AccountingService
 from reports.trial_balance import TrialBalanceService
+from reports.report_generator import ReportGenerator
 
 
 class ReportViewSet(viewsets.ViewSet):
@@ -144,6 +145,30 @@ class ReportViewSet(viewsets.ViewSet):
             return self._export_cash_flow_csv(cash_flow, company)
         
         return Response(cash_flow)
+    
+    @action(detail=False, methods=['get'])
+    def custom_report(self, request):
+        """Get custom report."""
+        company = self._get_company(request)
+        if not company:
+            return Response(
+                {'error': 'Company not found'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        report_type = request.query_params.get('report_type', '').lower()
+        start_date = self._parse_date(request.query_params.get('start_date'))
+        end_date = self._parse_date(request.query_params.get('end_date'))
+        
+        if report_type == 'trial_balance':
+            data = TrialBalanceService.generate(company, start_date, end_date)
+        else:
+            return Response(
+                {'error': 'Invalid report type'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        return Response(data)
     
     def _export_balance_sheet_excel(self, data, company):
         """Export balance sheet to Excel."""
@@ -528,4 +553,103 @@ class ReportViewSet(viewsets.ViewSet):
         response['Content-Disposition'] = f'attachment; filename="cash_flow_{data["start_date"]}_{data["end_date"]}.csv"'
         
         return response
+    
+    @action(detail=False, methods=['get'])
+    def trial_balance_cached(self, request):
+        """Get trial balance with caching for better performance."""
+        company = self._get_company(request)
+        if not company:
+            return Response(
+                {'error': 'Company not found'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        start_date_str = request.query_params.get('start_date')
+        end_date_str = request.query_params.get('end_date')
+        
+        start_date = None
+        end_date = None
+        
+        if start_date_str:
+            start_date = datetime.strptime(start_date_str, '%Y-%m-%d')
+        if end_date_str:
+            end_date = datetime.strptime(end_date_str, '%Y-%m-%d')
+        
+        generator = ReportGenerator(company)
+        trial_balance = generator.generate_trial_balance(start_date, end_date)
+        
+        return Response(trial_balance)
+    
+    @action(detail=False, methods=['get'])
+    def profit_loss(self, request):
+        """Get profit & loss statement (income statement) with optimizations."""
+        company = self._get_company(request)
+        if not company:
+            return Response(
+                {'error': 'Company not found'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        start_date_str = request.query_params.get('start_date')
+        end_date_str = request.query_params.get('end_date')
+        
+        start_date = None
+        end_date = None
+        
+        if start_date_str:
+            start_date = datetime.strptime(start_date_str, '%Y-%m-%d')
+        if end_date_str:
+            end_date = datetime.strptime(end_date_str, '%Y-%m-%d')
+        
+        generator = ReportGenerator(company)
+        pl_report = generator.generate_profit_loss(start_date, end_date)
+        
+        return Response(pl_report)
+    
+    @action(detail=False, methods=['get'])
+    def balance_sheet_optimized(self, request):
+        """Get balance sheet with optimizations."""
+        company = self._get_company(request)
+        if not company:
+            return Response(
+                {'error': 'Company not found'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        as_of_date_str = request.query_params.get('as_of_date')
+        
+        as_of_date = None
+        if as_of_date_str:
+            as_of_date = datetime.strptime(as_of_date_str, '%Y-%m-%d')
+        
+        generator = ReportGenerator(company)
+        balance_sheet = generator.generate_balance_sheet(as_of_date)
+        
+        return Response(balance_sheet)
+    
+    @action(detail=False, methods=['get'])
+    def cash_flow(self, request):
+        """Get cash flow statement."""
+        company = self._get_company(request)
+        if not company:
+            return Response(
+                {'error': 'Company not found'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        start_date_str = request.query_params.get('start_date')
+        end_date_str = request.query_params.get('end_date')
+        
+        start_date = None
+        end_date = None
+        
+        if start_date_str:
+            start_date = datetime.strptime(start_date_str, '%Y-%m-%d')
+        if end_date_str:
+            end_date = datetime.strptime(end_date_str, '%Y-%m-%d')
+        
+        generator = ReportGenerator(company)
+        cash_flow = generator.generate_cash_flow(start_date, end_date)
+        
+        return Response(cash_flow)
 
