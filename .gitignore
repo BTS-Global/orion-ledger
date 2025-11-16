@@ -89,3 +89,4 @@ Thumbs.db
 /backend/irs_forms/generated/*.pdf
 /backend/irs_forms/templates/*.pdf
 
+migrations_backup/

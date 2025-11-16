@@ -8,6 +8,7 @@ This module handles:
 - Model improvement over time
 """
 import logging
+import uuid
 from typing import Dict, List, Optional
 from datetime import datetime, timedelta
 from decimal import Decimal
@@ -29,7 +30,7 @@ class FeedbackEntry(models.Model):
         ('REJECTION', 'Rejection'),
     ]
     
-    id = models.UUIDField(primary_key=True, default=models.uuid.uuid4, editable=False)
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     transaction = models.ForeignKey('transactions.Transaction', on_delete=models.CASCADE, related_name='feedbacks')
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     
@@ -69,7 +70,7 @@ class FeedbackEntry(models.Model):
 class PredictionMetrics(models.Model):
     """Track AI prediction performance over time."""
     
-    id = models.UUIDField(primary_key=True, default=models.uuid.uuid4, editable=False)
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     company = models.ForeignKey('companies.Company', on_delete=models.CASCADE, related_name='metrics')
     
     # Time period
