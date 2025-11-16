@@ -11,6 +11,7 @@ from .serializers import (
 )
 from companies.models import Company, ChartOfAccounts
 from .account_mapper import AccountMapper
+from .transaction_analyzer import TransactionAnalyzer
 
 
 class TransactionViewSet(viewsets.ModelViewSet):
@@ -224,35 +225,94 @@ class TransactionViewSet(viewsets.ModelViewSet):
         stats = mapper.get_account_statistics()
         
         return Response(stats)
-
-
-class JournalEntryViewSet(viewsets.ModelViewSet):
-    """ViewSet for Journal Entry CRUD operations."""
     
-    permission_classes = []  # Temporarily allow any for testing
-    serializer_class = JournalEntrySerializer
+    @action(detail=True, methods=['get'])
+    def analyze(self, request, pk=None):
+        """Perform advanced AI analysis on a single transaction."""
+        transaction = self.get_object()
+        
+        analyzer = TransactionAnalyzer(transaction.company)
+        analysis = analyzer.analyze_transaction(
+            transaction.description,
+            transaction.amount,
+            transaction.type
+        )
+        
+        return Response(analysis)
     
-    def get_queryset(self):
-        """Return journal entries for companies accessible to the current user."""
-        if self.request.user.is_authenticated:
-            user = self.request.user
-            accessible_companies = Company.objects.filter(owner=user) | Company.objects.filter(users=user)
-            queryset = JournalEntry.objects.filter(company__in=accessible_companies)
+    @action(detail=False, methods=['post'])
+    def batch_analyze(self, request):
+        """Analyze multiple transactions at once."""
+        company_id = request.data.get('company')
+        transaction_ids = request.data.get('transaction_ids', [])
+        
+        if not company_id:
+            return Response(
+                {'error': 'Company ID is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            company = Company.objects.get(id=company_id)
+        except Company.DoesNotExist:
+            return Response(
+                {'error': 'Company not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        # Get transactions
+        if transaction_ids:
+            transactions = Transaction.objects.filter(
+                id__in=transaction_ids,
+                company=company
+            )
         else:
-            queryset = JournalEntry.objects.all()
+            # Analyze all unvalidated transactions
+            transactions = Transaction.objects.filter(
+                company=company,
+                is_validated=False
+            )
         
-        # Filter by company if provided
-        company_id = self.request.query_params.get('company', None)
-        if company_id:
-            queryset = queryset.filter(company_id=company_id)
+        analyzer = TransactionAnalyzer(company)
+        results = analyzer.batch_analyze(list(transactions))
         
-        # Filter by date range
-        start_date = self.request.query_params.get('start_date', None)
-        end_date = self.request.query_params.get('end_date', None)
-        if start_date:
-            queryset = queryset.filter(date__gte=start_date)
-        if end_date:
-            queryset = queryset.filter(date__lte=end_date)
+        return Response(results)
+    
+    @action(detail=False, methods=['get'])
+    def insights(self, request):
+        """Get AI-powered insights about transactions and account structure."""
+        company_id = request.query_params.get('company')
         
-        return queryset
+        if not company_id:
+            return Response(
+                {'error': 'Company ID is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            company = Company.objects.get(id=company_id)
+        except Company.DoesNotExist:
+            return Response(
+                {'error': 'Company not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        analyzer = TransactionAnalyzer(company)
+        suggestions = analyzer.suggest_account_improvements()
+        
+        # Get transaction statistics
+        total_transactions = Transaction.objects.filter(company=company).count()
+        validated_transactions = Transaction.objects.filter(
+            company=company,
+            is_validated=True
+        ).count()
+        
+        return Response({
+            'suggestions': suggestions,
+            'statistics': {
+                'total_transactions': total_transactions,
+                'validated_transactions': validated_transactions,
+                'validation_rate': (validated_transactions / total_transactions * 100) if total_transactions > 0 else 0
+            }
+        })
 

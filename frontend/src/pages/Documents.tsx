@@ -19,6 +19,7 @@ import {
 import { toast } from 'sonner';
 import { TransactionReviewModal } from '@/components/TransactionReviewModal';
 import { DocumentReviewModal } from '@/components/DocumentReviewModal';
+import { TransactionInsights } from '@/components/TransactionInsights';
 import { useCsrfToken, getCsrfTokenFromCookie } from '@/hooks/useCsrfToken';
 import { InfoTooltip } from "@/components/InfoTooltip";
 import { DOCUMENT_UPLOAD_TOOLTIPS } from "@/lib/tooltips";
@@ -360,6 +361,11 @@ export default function Documents() {
           </div>
         </CardContent>
       </Card>
+
+      {/* AI Insights */}
+      {selectedCompany && (
+        <TransactionInsights companyId={selectedCompany} />
+      )}
 
       {/* Upload Area - Collapsible */}
       <Card>
