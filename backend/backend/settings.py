@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     'transactions',
     'reports',
     'irs_forms',
+    'offshore',  # NEW: Offshore jurisdictions support
 ]
 
 MIDDLEWARE = [
