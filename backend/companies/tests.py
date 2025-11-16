@@ -11,7 +11,7 @@ class CompanyModelTest(TestCase):
     
     def setUp(self):
         self.company = Company.objects.create(
-            company_name="Test Corp",
+            name="Test Corp",
             tax_id="12-3456789",
             fiscal_year_end="12-31",
             entity_type="LLC"
@@ -32,10 +32,7 @@ class ChartOfAccountsTest(TestCase):
     """Test Chart of Accounts model."""
     
     def setUp(self):
-        self.company = Company.objects.create(
-            company_name="Test Corp",
-            tax_id="12-3456789"
-        )
+        self.company = create_test_company(name="Test Corp", tax_id="12-3456789")
         self.account = ChartOfAccounts.objects.create(
             company=self.company,
             account_code="1000",
@@ -59,10 +56,7 @@ class AccountingServiceTest(TestCase):
     """Test accounting service functions."""
     
     def setUp(self):
-        self.company = Company.objects.create(
-            company_name="Test Corp",
-            tax_id="12-3456789"
-        )
+        self.company = create_test_company(name="Test Corp", tax_id="12-3456789")
         
         # Create accounts
         self.cash = ChartOfAccounts.objects.create(

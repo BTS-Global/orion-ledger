@@ -16,8 +16,15 @@ from datetime import datetime, timedelta
 
 from django.conf import settings
 from django.core.cache import cache
-from sentence_transformers import SentenceTransformer
 import numpy as np
+
+# Conditional import for sentence-transformers (may not be available in test environment)
+try:
+    from sentence_transformers import SentenceTransformer
+    SENTENCE_TRANSFORMERS_AVAILABLE = True
+except ImportError:
+    SENTENCE_TRANSFORMERS_AVAILABLE = False
+    SentenceTransformer = None
 
 logger = logging.getLogger(__name__)
 
@@ -41,6 +48,13 @@ class RAGService:
             return
             
         logger.info("Initializing RAG Service...")
+        
+        if not SENTENCE_TRANSFORMERS_AVAILABLE:
+            logger.warning("sentence-transformers not available. RAG Service will run in limited mode.")
+            self._model = None
+            self._embedding_dim = 384
+            self._initialized = True
+            return
         
         try:
             # Load lightweight embedding model

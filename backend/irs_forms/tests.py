@@ -10,10 +10,7 @@ class IRSFormTest(TestCase):
     """Test IRS Form model."""
     
     def setUp(self):
-        self.company = Company.objects.create(
-            company_name="Test Corp",
-            tax_id="12-3456789"
-        )
+        self.company = create_test_company(name="Test Corp", tax_id="12-3456789")
         self.irs_form = IRSForm.objects.create(
             company=self.company,
             form_type="1120",

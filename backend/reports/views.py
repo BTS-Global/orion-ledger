@@ -9,8 +9,15 @@ from datetime import datetime, date
 from django.http import HttpResponse
 import openpyxl
 from openpyxl.styles import Font, Alignment, PatternFill
-from weasyprint import HTML
 import logging
+
+# Conditional import for WeasyPrint (may not be available in test environment)
+try:
+    from weasyprint import HTML
+    WEASYPRINT_AVAILABLE = True
+except (ImportError, OSError):
+    WEASYPRINT_AVAILABLE = False
+    HTML = None
 
 from companies.models import Company
 from transactions.accounting_service import AccountingService
@@ -389,6 +396,12 @@ class ReportViewSet(viewsets.ViewSet):
         </html>
         """
         
+        if not WEASYPRINT_AVAILABLE:
+            return Response(
+                {"error": "PDF generation not available. WeasyPrint is not installed."},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE
+            )
+        
         pdf = HTML(string=html_content).write_pdf()
         
         response = HttpResponse(pdf, content_type='application/pdf')
@@ -434,6 +447,12 @@ class ReportViewSet(viewsets.ViewSet):
         </body>
         </html>
         """
+        
+        if not WEASYPRINT_AVAILABLE:
+            return Response(
+                {"error": "PDF generation not available. WeasyPrint is not installed."},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE
+            )
         
         pdf = HTML(string=html_content).write_pdf()
         
