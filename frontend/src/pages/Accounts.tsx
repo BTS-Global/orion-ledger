@@ -286,9 +286,22 @@ export default function Accounts() {
               </div>
               <p className="text-sm text-gray-600">Manage your accounting structure</p>
             </div>
-            <Button onClick={openNewDialog}>
-              + New Account
-            </Button>
+            <div className="flex gap-2">
+              {companies.length > 0 && (
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setSelectedCompanyForInit(companies[0].id);
+                    setShowInitCOADialog(true);
+                  }}
+                >
+                  Initialize Default COA
+                </Button>
+              )}
+              <Button onClick={openNewDialog}>
+                + New Account
+              </Button>
+            </div>
           </div>
         </div>
       </header>
@@ -425,6 +438,52 @@ export default function Accounts() {
         )}
       </main>
 
+      {/* Initialize Default COA Dialog */}
+      <Dialog open={showInitCOADialog} onOpenChange={setShowInitCOADialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Initialize Default Chart of Accounts</DialogTitle>
+            <DialogDescription>
+              This will create a standard set of accounts for your company based on best practices.
+              Existing accounts will not be affected unless you choose to overwrite.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Label htmlFor="init-company">Select Company</Label>
+            <Select 
+              value={selectedCompanyForInit} 
+              onValueChange={setSelectedCompanyForInit}
+            >
+              <SelectTrigger id="init-company">
+                <SelectValue placeholder="Select a company" />
+              </SelectTrigger>
+              <SelectContent>
+                {companies.map(company => (
+                  <SelectItem key={company.id} value={company.id}>{company.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <DialogFooter>
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => setShowInitCOADialog(false)}
+              disabled={initializingCOA}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={() => handleInitializeDefaultCOA(selectedCompanyForInit, false)}
+              disabled={initializingCOA || !selectedCompanyForInit}
+            >
+              {initializingCOA ? 'Initializing...' : 'Initialize'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* New/Edit Account Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
