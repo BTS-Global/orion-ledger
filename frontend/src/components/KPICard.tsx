@@ -15,9 +15,9 @@ export function KPICard({ title, value, change, subtitle, icon, trend }: KPICard
   const determinedTrend = trend || (change && change > 0 ? "up" : change && change < 0 ? "down" : "neutral");
   
   const trendColors = {
-    up: "text-green-600",
-    down: "text-red-600",
-    neutral: "text-gray-500",
+    up: "text-bts-success",
+    down: "text-bts-error",
+    neutral: "text-bts-gray-semi-dark",
   };
   
   const TrendIcon = determinedTrend === "up" ? TrendingUp : determinedTrend === "down" ? TrendingDown : Minus;
