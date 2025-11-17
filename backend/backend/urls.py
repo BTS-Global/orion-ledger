@@ -46,9 +46,6 @@ urlpatterns = [
     path('api/auth/status/', auth_status, name='auth-status'),
     path('api/auth/csrf/', get_csrf_token, name='csrf-token'),
     
-    # Debug endpoints
-    path('api/debug/session/', debug_session, name='debug-session'),
-    path('api/debug/test-login/', test_login, name='test-login'),
     # Local authentication
     path('api/auth/register/', register_user, name='register'),
     path('api/auth/login/', login_user, name='login'),
@@ -68,8 +65,18 @@ urlpatterns = [
     path('api-auth/', include('rest_framework.urls')),
 ]
 
-# Serve media files in development
+# Debug-only endpoints and static files in development
 if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
-    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+    # Debug endpoints - only available in development
+    urlpatterns += [
+        path('api/debug/session/', debug_session, name='debug-session'),
+        path('api/debug/test-login/', test_login, name='test-login'),
+    ]
+    # Serve media and static files in development
+    urlpatterns += static(
+        settings.MEDIA_URL, document_root=settings.MEDIA_ROOT
+    )
+    urlpatterns += static(
+        settings.STATIC_URL, document_root=settings.STATIC_ROOT
+    )
 

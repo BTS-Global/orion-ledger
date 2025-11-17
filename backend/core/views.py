@@ -91,7 +91,8 @@ def get_csrf_token(request):
     })
 
 
-# DEBUG ENDPOINTS - Remove in production
+# DEBUG ENDPOINTS - Only enabled when DEBUG=True in settings
+# These endpoints are automatically disabled in production
 @api_view(['GET'])
 @permission_classes([AllowAny])
 @csrf_exempt
