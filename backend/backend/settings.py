@@ -169,15 +169,12 @@ SPECTACULAR_SETTINGS = {
 }
 
 # CORS settings
-CORS_ALLOW_ALL_ORIGINS = DEBUG  # Only for development
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    "http://localhost:3001",
-    "http://localhost:8080",
-    "https://3000-i3frgoykifkd00heetwub-abd2a201.manusvm.computer",
-    "https://3001-i3frgoykifkd00heetwub-abd2a201.manusvm.computer",
-    "https://8000-i3frgoykifkd00heetwub-abd2a201.manusvm.computer",
-]
+# Security: Always use explicit origin list, never allow all origins
+CORS_ALLOW_ALL_ORIGINS = False
+CORS_ALLOWED_ORIGINS = os.getenv(
+    'CORS_ALLOWED_ORIGINS',
+    'http://localhost:3000,http://localhost:3001,http://localhost:8080'
+).split(',')
 CORS_ALLOW_CREDENTIALS = True
 
 # Session and Cookie settings for cross-domain
@@ -188,13 +185,11 @@ CSRF_COOKIE_SAMESITE = 'None'
 CSRF_COOKIE_SECURE = True
 CSRF_COOKIE_HTTPONLY = False  # Frontend needs to read it
 
-CSRF_TRUSTED_ORIGINS = [
-    "http://localhost:3000",
-    "http://localhost:3001",
-    "https://3000-i3frgoykifkd00heetwub-abd2a201.manusvm.computer",
-    "https://3001-i3frgoykifkd00heetwub-abd2a201.manusvm.computer",
-    "https://8000-i3frgoykifkd00heetwub-abd2a201.manusvm.computer",
-]
+# Security: CSRF trusted origins from environment variable
+CSRF_TRUSTED_ORIGINS = os.getenv(
+    'CSRF_TRUSTED_ORIGINS',
+    'http://localhost:3000,http://localhost:3001'
+).split(',')
 
 # Celery Configuration
 CELERY_BROKER_URL = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
