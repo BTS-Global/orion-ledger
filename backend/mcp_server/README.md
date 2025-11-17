@@ -193,19 +193,76 @@ Adicione ao arquivo de configuração do Claude Desktop (`~/Library/Application 
 }
 ```
 
-## Monitoramento
+## Monitoramento e Métricas
 
-### Health Check
+### Prometheus Metrics
 
-```bash
-curl http://localhost:8001/health
+O servidor MCP expõe métricas no formato Prometheus através do endpoint `/metrics`.
+
+#### Métricas Disponíveis
+
+1. **mcp_requests_total** (Counter)
+   - Total de requisições MCP processadas
+   - Labels: `method`, `endpoint`, `status`
+   - Exemplo: `mcp_requests_total{method="GET",endpoint="/resources",status="200"} 1523`
+
+2. **mcp_request_duration_seconds** (Histogram)
+   - Duração das requisições em segundos
+   - Labels: `method`, `endpoint`
+   - Buckets: 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10
+   - Exemplo: `mcp_request_duration_seconds_bucket{method="POST",endpoint="/tools",le="0.1"} 145`
+
+3. **mcp_active_connections** (Gauge)
+   - Número de conexões ativas no momento
+   - Exemplo: `mcp_active_connections 42`
+
+4. **mcp_errors_total** (Counter)
+   - Total de erros ocorridos
+   - Labels: `endpoint`, `error_type`
+   - Exemplo: `mcp_errors_total{endpoint="/tools",error_type="HTTPException"} 3`
+
+5. **mcp_redis_operations_total** (Counter)
+   - Total de operações Redis realizadas
+   - Labels: `operation`, `status`
+   - Exemplo: `mcp_redis_operations_total{operation="get",status="success"} 8932`
+
+#### Configurando Prometheus
+
+1. Adicione o servidor MCP como target no `prometheus.yml`:
+
+```yaml
+scrape_configs:
+  - job_name: 'mcp-server'
+    static_configs:
+      - targets: ['localhost:8001']
+    scrape_interval: 15s
+    metrics_path: '/metrics'
 ```
 
-### Métricas
+2. Exemplos de queries PromQL úteis:
 
-```bash
-curl http://localhost:8001/metrics
+```promql
+# Taxa de requisições por segundo
+rate(mcp_requests_total[5m])
+
+# Latência P95
+histogram_quantile(0.95, rate(mcp_request_duration_seconds_bucket[5m]))
+
+# Taxa de erros
+rate(mcp_errors_total[5m]) / rate(mcp_requests_total[5m])
+
+# Conexões ativas médias
+avg_over_time(mcp_active_connections[5m])
 ```
+
+#### Integrando com Grafana
+
+Dashboard recomendado com os seguintes painéis:
+- Taxa de requisições por endpoint
+- Latência P50, P95, P99
+- Taxa de erros por tipo
+- Conexões ativas
+- Operações Redis por segundo
 
 ## Segurança
 

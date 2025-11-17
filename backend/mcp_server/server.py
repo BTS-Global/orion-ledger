@@ -7,6 +7,7 @@ import sys
 import os
 from typing import Dict, Any, Optional
 from contextlib import asynccontextmanager
+import time
 
 # Add backend to Python path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
@@ -16,9 +17,12 @@ import django
 django.setup()
 
 from fastapi import FastAPI, Request, HTTPException
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 import redis.asyncio as redis
 import uvicorn
+
+# Prometheus metrics
+from prometheus_client import Counter, Histogram, Gauge, generate_latest, CONTENT_TYPE_LATEST
 
 from .config import settings, SUPPORTED_MODELS
 from .middleware import (
@@ -37,6 +41,37 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+
+# Prometheus metrics
+mcp_requests_total = Counter(
+    'mcp_requests_total',
+    'Total number of MCP requests',
+    ['method', 'endpoint', 'status']
+)
+
+mcp_request_duration_seconds = Histogram(
+    'mcp_request_duration_seconds',
+    'MCP request duration in seconds',
+    ['method', 'endpoint']
+)
+
+mcp_active_connections = Gauge(
+    'mcp_active_connections',
+    'Number of active MCP connections'
+)
+
+mcp_errors_total = Counter(
+    'mcp_errors_total',
+    'Total number of MCP errors',
+    ['endpoint', 'error_type']
+)
+
+mcp_redis_operations = Counter(
+    'mcp_redis_operations_total',
+    'Total Redis operations',
+    ['operation', 'status']
+)
 
 
 # Redis client
@@ -90,6 +125,58 @@ app = FastAPI(
 # Setup middleware
 setup_cors_middleware(app)
 
+
+# Metrics middleware
+@app.middleware("http")
+async def metrics_middleware(request: Request, call_next):
+    """Middleware to track request metrics"""
+    # Skip metrics endpoint itself
+    if request.url.path == "/metrics":
+        return await call_next(request)
+    
+    # Track active connections
+    mcp_active_connections.inc()
+    
+    # Track request duration
+    start_time = time.time()
+    
+    try:
+        response = await call_next(request)
+        
+        # Record metrics
+        duration = time.time() - start_time
+        mcp_request_duration_seconds.labels(
+            method=request.method,
+            endpoint=request.url.path
+        ).observe(duration)
+        
+        mcp_requests_total.labels(
+            method=request.method,
+            endpoint=request.url.path,
+            status=response.status_code
+        ).inc()
+        
+        return response
+        
+    except Exception as e:
+        # Record error metrics
+        mcp_errors_total.labels(
+            endpoint=request.url.path,
+            error_type=type(e).__name__
+        ).inc()
+        
+        mcp_requests_total.labels(
+            method=request.method,
+            endpoint=request.url.path,
+            status=500
+        ).inc()
+        
+        raise
+        
+    finally:
+        mcp_active_connections.dec()
+
+
 # Add custom middleware (order matters!)
 if redis_client:
     app.add_middleware(AuditLogMiddleware)
@@ -114,14 +201,12 @@ async def health_check():
 # Metrics endpoint
 @app.get("/metrics")
 async def metrics():
-    """Metrics endpoint for monitoring"""
-    # TODO: Implement comprehensive metrics
-    return {
-        "requests_total": 0,
-        "requests_per_minute": 0,
-        "avg_latency_ms": 0,
-        "error_rate": 0,
-    }
+    """Prometheus metrics endpoint"""
+    metrics_data = generate_latest()
+    return Response(
+        content=metrics_data,
+        media_type=CONTENT_TYPE_LATEST
+    )
 
 
 # MCP Resources Endpoints
