@@ -23,7 +23,14 @@ class IRSFormViewSet(viewsets.ModelViewSet):
         """Filter forms by user's companies."""
         # Get companies the user has access to
         user_companies = Company.objects.all()  # Simplified - would filter by user
-        return IRSForm.objects.filter(company__in=user_companies)
+        
+        # Optimize queries to prevent N+1 problem
+        return IRSForm.objects.filter(
+            company__in=user_companies
+        ).select_related(
+            'company',
+            'created_by'
+        )
     
     @action(detail=False, methods=['post'])
     def generate_5472(self, request):

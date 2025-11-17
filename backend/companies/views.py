@@ -28,7 +28,12 @@ class CompanyViewSet(viewsets.ModelViewSet):
         # if self.request.user.is_authenticated:
         #     user = self.request.user
         #     return Company.objects.filter(owner=user) | Company.objects.filter(users=user)
-        return Company.objects.all()
+        
+        # Optimize queries to prevent N+1 problem
+        return Company.objects.select_related('owner').prefetch_related(
+            'users',
+            'chartofaccounts_set'
+        )
     
     def get_serializer_class(self):
         """Use detailed serializer for retrieve action."""
@@ -140,8 +145,12 @@ class UserProfileViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self):
         """Return only the current user's profile."""
+        queryset = UserProfile.objects.select_related(
+            'user',
+            'active_company'
+        )
         if self.request.user.is_authenticated:
-            return UserProfile.objects.filter(user=self.request.user)
+            return queryset.filter(user=self.request.user)
         return UserProfile.objects.none()
     
     @action(detail=False, methods=['get'])
@@ -165,10 +174,21 @@ class ChartOfAccountsViewSet(viewsets.ModelViewSet):
         """Return accounts for companies accessible to the current user."""
         if self.request.user.is_authenticated:
             user = self.request.user
-            accessible_companies = Company.objects.filter(owner=user) | Company.objects.filter(users=user)
-            queryset = ChartOfAccounts.objects.filter(company__in=accessible_companies)
+            accessible_companies = (
+                Company.objects.filter(owner=user) |
+                Company.objects.filter(users=user)
+            )
+            queryset = ChartOfAccounts.objects.filter(
+                company__in=accessible_companies
+            )
         else:
             queryset = ChartOfAccounts.objects.all()
+        
+        # Optimize queries to prevent N+1 problem
+        queryset = queryset.select_related(
+            'company',
+            'parent_account'
+        ).prefetch_related('children')
         
         # Filter by company if provided
         company_id = self.request.query_params.get('company', None)

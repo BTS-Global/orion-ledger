@@ -19,10 +19,22 @@ class DocumentViewSet(viewsets.ModelViewSet):
         """Return documents for companies accessible to the current user."""
         if self.request.user.is_authenticated:
             user = self.request.user
-            accessible_companies = Company.objects.filter(owner=user) | Company.objects.filter(users=user)
-            queryset = Document.objects.filter(company__in=accessible_companies)
+            accessible_companies = (
+                Company.objects.filter(owner=user) |
+                Company.objects.filter(users=user)
+            )
+            queryset = Document.objects.filter(
+                company__in=accessible_companies
+            )
         else:
             queryset = Document.objects.all()
+        
+        # Optimize queries to prevent N+1 problem
+        queryset = queryset.select_related(
+            'company',
+            'uploaded_by',
+            'reviewed_by'
+        ).prefetch_related('transactions')
         
         # Filter by company if provided
         company_id = self.request.query_params.get('company', None)
