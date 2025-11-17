@@ -1,6 +1,7 @@
 """
 Celery tasks for document processing.
 """
+from typing import Dict, List, Any, Optional, Tuple
 from celery import shared_task
 from django.utils import timezone
 import os

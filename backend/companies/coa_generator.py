@@ -1,6 +1,7 @@
 """
 Service for generating default Chart of Accounts for companies.
 """
+from typing import Dict, List, Any
 from companies.models import Company, ChartOfAccounts
 from companies.coa import AccountType
 
@@ -112,7 +113,7 @@ class DefaultCOAGenerator:
     ]
     
     @classmethod
-    def generate(cls, company: Company, overwrite: bool = False) -> dict:
+    def generate(cls, company: Company, overwrite: bool = False) -> Dict[str, Any]:
         """
         Generate default Chart of Accounts for a company.
         
@@ -173,7 +174,7 @@ class DefaultCOAGenerator:
         }
     
     @classmethod
-    def get_default_accounts_preview(cls) -> list:
+    def get_default_accounts_preview(cls) -> List[Dict[str, Any]]:
         """
         Get a preview of default accounts that would be created.
         

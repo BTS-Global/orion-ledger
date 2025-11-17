@@ -3,10 +3,13 @@ Balance Manager for optimized balance calculations.
 
 Inspired by Cotizador's LedgerBookBalanceManager.
 """
+from typing import Optional, Dict, Any
+from datetime import datetime
+from decimal import Decimal
+
 from django.db import models
 from django.db.models import Q, Sum
 from django.utils import timezone
-from decimal import Decimal
 
 from core.exceptions import FutureOperationError, RetroactiveOperationError
 
