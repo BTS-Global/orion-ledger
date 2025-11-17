@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import { BACKEND_URL } from '@/config/api';
 import { getCsrfTokenFromCookie } from '@/hooks/useCsrfToken';
 import { CheckCircle2, XCircle, AlertCircle, Edit, Trash2 } from 'lucide-react';
+import logger from '@/utils/logger';
 
 interface Transaction {
   date: string;
@@ -84,7 +85,7 @@ export function TransactionReviewModal({ documentId, open, onOpenChange, onConfi
         toast.error('Failed to load extracted data');
       }
     } catch (error) {
-      console.error('Error fetching extracted data:', error);
+      logger.error('Error fetching extracted data', error);
       toast.error('Failed to load extracted data');
     } finally {
       setLoading(false);
@@ -102,7 +103,7 @@ export function TransactionReviewModal({ documentId, open, onOpenChange, onConfi
         setAccounts(data.results || data || []);
       }
     } catch (error) {
-      console.error('Error fetching accounts:', error);
+      logger.error('Error fetching accounts', error);
     }
   };
 
@@ -181,7 +182,7 @@ export function TransactionReviewModal({ documentId, open, onOpenChange, onConfi
         toast.error(error.error || 'Failed to confirm transactions');
       }
     } catch (error) {
-      console.error('Error confirming transactions:', error);
+      logger.error('Error confirming transactions', error);
       toast.error('Failed to confirm transactions');
     } finally {
       setConfirming(false);
@@ -207,7 +208,7 @@ export function TransactionReviewModal({ documentId, open, onOpenChange, onConfi
         toast.error('Failed to reject transactions');
       }
     } catch (error) {
-      console.error('Error rejecting transactions:', error);
+      logger.error('Error rejecting transactions', error);
       toast.error('Failed to reject transactions');
     }
   };

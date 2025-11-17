@@ -15,6 +15,7 @@ import {
   RefreshCw
 } from 'lucide-react';
 import { BACKEND_URL } from '@/config/api';
+import logger from '@/utils/logger';
 
 interface Suggestion {
   type: string;
@@ -81,7 +82,7 @@ export function TransactionInsights({ companyId }: TransactionInsightsProps) {
         toast.error('Failed to load insights');
       }
     } catch (error) {
-      console.error('Failed to fetch insights:', error);
+      logger.error('Failed to fetch insights', error);
       toast.error('Failed to load insights');
     } finally {
       setLoading(false);

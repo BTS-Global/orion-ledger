@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import logger from '@/utils/logger';
 
 const BACKEND_URL = "https://8000-iawczpd16uqen9op7vv32-370d3fde.manusvm.computer";
 
@@ -42,7 +43,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(null);
       }
     } catch (error) {
-      console.error('Auth check failed:', error);
+      logger.error('Auth check failed', error);
       setUser(null);
     } finally {
       setLoading(false);
@@ -64,7 +65,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         credentials: 'include',
       });
     } catch (error) {
-      console.error('Logout failed:', error);
+      logger.error('Logout failed', error);
     }
     setUser(null);
     window.location.href = '/login';

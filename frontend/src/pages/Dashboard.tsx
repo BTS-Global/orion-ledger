@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 
 import { BACKEND_URL } from "@/config/api";;
+import logger from '@/utils/logger';
 
 interface Stats {
   companies: number;
@@ -108,7 +109,7 @@ export default function Dashboard() {
         accounts: accounts.results ? accounts.results.length : (accounts.count || 0),
       });
     } catch (error) {
-      console.error('Failed to fetch stats:', error);
+      logger.error('Failed to fetch stats', error);
     } finally {
       setLoading(false);
     }
@@ -136,7 +137,7 @@ export default function Dashboard() {
         }
       }
     } catch (error) {
-      console.error('Failed to fetch KPIs:', error);
+      logger.error('Failed to fetch KPIs', error);
     } finally {
       setKpisLoading(false);
     }

@@ -30,6 +30,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { CheckCircle2, XCircle, Edit, Trash2, RefreshCw } from "lucide-react";
 import { BACKEND_URL } from "@/config/api";
+import logger from '@/utils/logger';
 
 interface Transaction {
   id: string;
@@ -97,7 +98,7 @@ export default function Transactions() {
         setSelectedCompany(companies[0].id);
       }
     } catch (error) {
-      console.error("Error fetching companies:", error);
+      logger.error("Error fetching companies", error);
     }
   };
 
@@ -107,7 +108,7 @@ export default function Transactions() {
       const data = await response.json();
       setAccounts(data.results || data || []);
     } catch (error) {
-      console.error("Error fetching accounts:", error);
+      logger.error("Error fetching accounts", error);
     }
   };
 
@@ -125,7 +126,7 @@ export default function Transactions() {
       const data = await response.json();
       setTransactions(data.results || data || []);
     } catch (error) {
-      console.error("Error fetching transactions:", error);
+      logger.error("Error fetching transactions", error);
     } finally {
       setLoading(false);
     }
@@ -164,7 +165,7 @@ export default function Transactions() {
         fetchTransactions();
       }
     } catch (error) {
-      console.error("Error updating transaction:", error);
+      logger.error("Error updating transaction", error);
     }
   };
 
@@ -181,7 +182,7 @@ export default function Transactions() {
         fetchTransactions();
       }
     } catch (error) {
-      console.error("Error validating transaction:", error);
+      logger.error("Error validating transaction", error);
     }
   };
 
@@ -200,7 +201,7 @@ export default function Transactions() {
         fetchTransactions();
       }
     } catch (error) {
-      console.error("Error deleting transaction:", error);
+      logger.error("Error deleting transaction", error);
     }
   };
 

@@ -6,6 +6,7 @@ import { Progress } from "@/components/ui/progress";
 import { toast } from 'sonner';
 import { AlertCircle, CheckCircle, TrendingUp, FileText } from 'lucide-react';
 import { BACKEND_URL } from '@/config/api';
+import logger from '@/utils/logger';
 
 interface CoverageAnalysis {
   coverage_score: number;
@@ -61,7 +62,7 @@ export function COACoverageAnalysis({ companyId }: COACoverageAnalysisProps) {
         toast.error('Failed to load coverage analysis');
       }
     } catch (error) {
-      console.error('Failed to fetch analysis:', error);
+      logger.error('Failed to fetch analysis', error);
       toast.error('Failed to load coverage analysis');
     } finally {
       setLoading(false);

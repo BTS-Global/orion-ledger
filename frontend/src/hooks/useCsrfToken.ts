@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { BACKEND_URL } from '@/config/api';
+import logger from '@/utils/logger';
 
 export function useCsrfToken() {
   const [csrfToken, setCsrfToken] = useState<string>('');
@@ -15,7 +16,7 @@ export function useCsrfToken() {
           setCsrfToken(data.csrfToken);
         }
       })
-      .catch(err => console.error('Failed to fetch CSRF token:', err));
+      .catch(err => logger.error('Failed to fetch CSRF token', err));
   }, []);
 
   return csrfToken;

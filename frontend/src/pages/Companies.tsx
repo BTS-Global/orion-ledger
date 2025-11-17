@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { useCsrfToken, getCsrfTokenFromCookie } from '@/hooks/useCsrfToken';
+import logger from "@/utils/logger";
 
 import { BACKEND_URL } from "@/config/api";;
 
@@ -56,7 +57,7 @@ export default function Companies() {
         setCompanies(data.results || data);
       }
     } catch (error) {
-      console.error('Failed to fetch companies:', error);
+      logger.error('Failed to fetch companies', error);
       toast.error('Failed to load companies');
     } finally {
       setLoading(false);
@@ -94,7 +95,7 @@ export default function Companies() {
         toast.error(error.detail || 'Failed to save company');
       }
     } catch (error) {
-      console.error('Failed to save company:', error);
+      logger.error('Failed to save company', error);
       toast.error('Failed to save company');
     }
   };
@@ -135,7 +136,7 @@ export default function Companies() {
         toast.error('Failed to delete company');
       }
     } catch (error) {
-      console.error('Failed to delete company:', error);
+      logger.error('Failed to delete company', error);
       toast.error('Failed to delete company');
     }
   };
@@ -159,7 +160,7 @@ export default function Companies() {
         toast.error('Failed to activate company');
       }
     } catch (error) {
-      console.error('Failed to activate company:', error);
+      logger.error('Failed to activate company', error);
       toast.error('Failed to activate company');
     }
   };

@@ -12,6 +12,7 @@ import { IRS_FORM_TOOLTIPS } from "@/lib/tooltips";
 import { AIFormAnalysis } from "@/components/AIFormAnalysis";
 
 import { BACKEND_URL } from "@/config/api";;
+import logger from '@/utils/logger';
 
 interface IRSForm {
   id: number;
@@ -58,7 +59,7 @@ export default function IRSForms() {
         }
       }
     } catch (error) {
-      console.error('Failed to fetch companies:', error);
+      logger.error('Failed to fetch companies', error);
     }
   };
 
@@ -72,7 +73,7 @@ export default function IRSForms() {
         setForms(data.results || data || []);
       }
     } catch (error) {
-      console.error('Failed to fetch forms:', error);
+      logger.error('Failed to fetch forms', error);
     }
   };
 
@@ -134,10 +135,10 @@ export default function IRSForms() {
       } else {
         const errorData = await response.json();
         toast.error(`Failed to generate form: ${errorData.error || 'Unknown error'}`);
-        console.error('Failed to generate form:', errorData);
+        logger.error('Failed to generate form', errorData);
       }
     } catch (error) {
-      console.error('Error generating form:', error);
+      logger.error('Error generating form', error);
     } finally {
       setLoading(false);
       setGenerating(null);

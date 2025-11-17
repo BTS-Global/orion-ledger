@@ -25,6 +25,7 @@ import { InfoTooltip } from "@/components/InfoTooltip";
 import { DOCUMENT_UPLOAD_TOOLTIPS } from "@/lib/tooltips";
 import { Search, FileText, Upload, ChevronLeft, ChevronRight, RotateCw, CheckCircle2 } from "lucide-react";
 import { BACKEND_URL } from '@/config/api';
+import logger from '@/utils/logger';
 
 interface Document {
   id: string;
@@ -113,7 +114,7 @@ export default function Documents() {
         }
       }
     } catch (error) {
-      console.error('Failed to fetch companies:', error);
+      logger.error('Failed to fetch companies', error);
       toast.error('Failed to load companies');
     }
   };
@@ -130,7 +131,7 @@ export default function Documents() {
         setLoading(false);
       }
     } catch (error) {
-      console.error('Failed to fetch documents:', error);
+      logger.error('Failed to fetch documents', error);
       setLoading(false);
     }
   };
@@ -206,7 +207,7 @@ export default function Documents() {
           toast.error(`Failed to upload ${file.name}: ${error.detail || 'Unknown error'}`);
         }
       } catch (error) {
-        console.error('Upload error:', error);
+        logger.error('Upload error', error);
         toast.error(`Failed to upload ${file.name}`);
       }
     }
@@ -253,7 +254,7 @@ export default function Documents() {
         toast.error('Failed to reprocess document');
       }
     } catch (error) {
-      console.error('Reprocess error:', error);
+      logger.error('Reprocess error', error);
       toast.error('Failed to reprocess document');
     }
   };
@@ -283,7 +284,7 @@ export default function Documents() {
         toast.error('Failed to delete document');
       }
     } catch (error) {
-      console.error('Delete error:', error);
+      logger.error('Delete error', error);
       toast.error('Failed to delete document');
     }
 

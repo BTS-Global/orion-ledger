@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { toast } from 'sonner';
 import { BACKEND_URL } from '@/config/api';
+import logger from '@/utils/logger';
 
 interface Account {
   id: string;
@@ -65,7 +66,7 @@ export function AccountHierarchyTree({
         toast.error('Failed to load account hierarchy');
       }
     } catch (error) {
-      console.error('Failed to fetch hierarchy:', error);
+      logger.error('Failed to fetch hierarchy', error);
       toast.error('Failed to load account hierarchy');
     } finally {
       setLoading(false);

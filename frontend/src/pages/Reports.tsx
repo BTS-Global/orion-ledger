@@ -8,6 +8,7 @@ import { useState, useEffect } from "react";
 import { FileDown, Loader2, DollarSign } from "lucide-react";
 
 import { BACKEND_URL } from "@/config/api";;
+import logger from '@/utils/logger';
 
 interface BalanceSheetData {
   date: string;
@@ -94,7 +95,7 @@ export default function Reports() {
         }
       }
     } catch (error) {
-      console.error('Failed to fetch companies:', error);
+      logger.error('Failed to fetch companies', error);
     }
   };
 
@@ -111,7 +112,7 @@ export default function Reports() {
         setBalanceSheet(data);
       }
     } catch (error) {
-      console.error('Failed to fetch balance sheet:', error);
+      logger.error('Failed to fetch balance sheet', error);
     } finally {
       setLoading(false);
     }
@@ -130,7 +131,7 @@ export default function Reports() {
         setIncomeStatement(data);
       }
     } catch (error) {
-      console.error('Failed to fetch income statement:', error);
+      logger.error('Failed to fetch income statement', error);
     } finally {
       setLoading(false);
     }
@@ -149,7 +150,7 @@ export default function Reports() {
         setCashFlow(data);
       }
     } catch (error) {
-      console.error('Failed to fetch cash flow:', error);
+      logger.error('Failed to fetch cash flow', error);
     } finally {
       setLoading(false);
     }

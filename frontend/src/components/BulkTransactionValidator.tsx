@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import { BACKEND_URL } from '@/config/api';
 import { getCsrfTokenFromCookie } from '@/hooks/useCsrfToken';
+import logger from '@/utils/logger';
 
 interface Transaction {
   id: string;
@@ -88,7 +89,7 @@ export function BulkTransactionValidator({
           errorCount++;
         }
       } catch (error) {
-        console.error('Error validating transaction:', error);
+        logger.error('Error validating transaction', error);
         errorCount++;
       }
     }

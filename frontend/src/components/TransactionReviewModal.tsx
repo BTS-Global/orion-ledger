@@ -135,11 +135,11 @@ export function TransactionReviewModal({ document, onClose, onImportComplete, cs
           } else {
             failCount++;
             const error = await response.json();
-            console.error('Failed to import transaction:', error);
+            logger.error('Failed to import transaction', error);
           }
         } catch (error) {
           failCount++;
-          console.error('Error importing transaction:', error);
+          logger.error('Error importing transaction', error);
         }
       }
 
@@ -155,7 +155,7 @@ export function TransactionReviewModal({ document, onClose, onImportComplete, cs
         toast.error(`Failed to import ${failCount} transaction(s)`);
       }
     } catch (error) {
-      console.error('Import error:', error);
+      logger.error('Import error', error);
       toast.error('Failed to import transactions');
     } finally {
       setImporting(false);

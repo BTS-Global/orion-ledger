@@ -14,6 +14,7 @@ import { AIChartAnalysis } from "@/components/AIChartAnalysis";
 import { AccountHierarchyTree } from "@/components/AccountHierarchyTree";
 import { AccountSuggestions } from "@/components/AccountSuggestions";
 import { COACoverageAnalysis } from "@/components/COACoverageAnalysis";
+import logger from "@/utils/logger";
 
 import { BACKEND_URL } from "@/config/api";;
 
@@ -87,7 +88,7 @@ export default function Accounts() {
         setCompanies(data.results || data);
       }
     } catch (error) {
-      console.error('Failed to fetch companies:', error);
+      logger.error('Failed to fetch companies', error);
     }
   };
 
@@ -101,7 +102,7 @@ export default function Accounts() {
         setAccounts(data.results || data);
       }
     } catch (error) {
-      console.error('Failed to fetch accounts:', error);
+      logger.error('Failed to fetch accounts', error);
       toast.error('Failed to load accounts');
     } finally {
       setLoading(false);
@@ -139,7 +140,7 @@ export default function Accounts() {
         toast.error(error.detail || 'Failed to save account');
       }
     } catch (error) {
-      console.error('Failed to save account:', error);
+      logger.error('Failed to save account', error);
       toast.error('Failed to save account');
     }
   };
@@ -177,7 +178,7 @@ export default function Accounts() {
         toast.error('Failed to delete account');
       }
     } catch (error) {
-      console.error('Failed to delete account:', error);
+      logger.error('Failed to delete account', error);
       toast.error('Failed to delete account');
     }
   };
@@ -202,7 +203,7 @@ export default function Accounts() {
         toast.error('Failed to update account');
       }
     } catch (error) {
-      console.error('Failed to update account:', error);
+      logger.error('Failed to update account', error);
       toast.error('Failed to update account');
     }
   };
@@ -248,7 +249,7 @@ export default function Accounts() {
         toast.error(data.message || 'Failed to initialize chart of accounts');
       }
     } catch (error) {
-      console.error('Error initializing COA:', error);
+      logger.error('Error initializing COA', error);
       toast.error('Failed to initialize chart of accounts');
     } finally {
       setInitializingCOA(false);

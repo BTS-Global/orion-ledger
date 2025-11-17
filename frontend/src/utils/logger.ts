@@ -39,10 +39,16 @@ export const logger = {
 
   /**
    * Error logs
-   * Visible in all environments
+   * Only visible in development, sent to monitoring in production
    */
-  error: (...args: any[]) => {
-    console.error('[ERROR]', ...args);
+  error: (message: string, error?: any) => {
+    if (isDevelopment) {
+      console.error('[ERROR]', message, error);
+    } else {
+      // In production, send to monitoring service (e.g., Sentry)
+      // TODO: Integrate with Sentry or similar error tracking service
+      // Sentry.captureException(error, { extra: { message } });
+    }
   },
 
   /**

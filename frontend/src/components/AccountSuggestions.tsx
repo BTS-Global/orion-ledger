@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from 'sonner';
 import { Search, Sparkles, TrendingUp } from 'lucide-react';
 import { BACKEND_URL } from '@/config/api';
+import logger from '@/utils/logger';
 
 interface AccountSuggestion {
   account_id: string;
@@ -49,7 +50,7 @@ export function AccountSuggestions({ companyId }: AccountSuggestionsProps) {
         toast.error('Failed to get account suggestions');
       }
     } catch (error) {
-      console.error('Failed to fetch suggestions:', error);
+      logger.error('Failed to fetch suggestions', error);
       toast.error('Failed to get account suggestions');
     } finally {
       setLoading(false);

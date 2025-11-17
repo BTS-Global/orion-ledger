@@ -11,6 +11,7 @@ import {
 import { Button } from "./ui/button";
 
 import { BACKEND_URL } from "@/config/api";
+import logger from '@/utils/logger';
 
 interface NavItem {
   path: string;
@@ -39,7 +40,7 @@ export default function Sidebar() {
       });
       window.location.href = '/login';
     } catch (error) {
-      console.error('Logout failed:', error);
+      logger.error('Logout failed', error);
     }
   };
 

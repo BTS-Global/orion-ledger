@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { toast } from 'sonner';
 import { FileText, Download, TrendingUp, DollarSign, Calendar } from 'lucide-react';
 import { BACKEND_URL } from '@/config/api';
+import logger from '@/utils/logger';
 
 interface FinancialReportsProps {
   companyId: string;
@@ -38,7 +39,7 @@ export function FinancialReports({ companyId }: FinancialReportsProps) {
         toast.error('Failed to generate report');
       }
     } catch (error) {
-      console.error('Failed to generate report:', error);
+      logger.error('Failed to generate report', error);
       toast.error('Failed to generate report');
     } finally {
       setLoading(false);
