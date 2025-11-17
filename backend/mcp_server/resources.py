@@ -240,6 +240,8 @@ class ReportsResource(MCPResource):
             return self._get_balance_sheet()
         elif self.report_type == "income_statement":
             return self._get_income_statement()
+        elif self.report_type == "cash_flow":
+            return self._get_cash_flow()
         else:
             return {"error": f"Unknown report type: {self.report_type}"}
     
@@ -261,21 +263,32 @@ class ReportsResource(MCPResource):
     
     def _get_balance_sheet(self) -> Dict[str, Any]:
         """Generate balance sheet"""
-        # TODO: Implement balance sheet generation
-        return {
-            "report_type": "balance_sheet",
-            "company_id": self.company_id,
-            "status": "not_implemented",
-        }
+        from mcp_server.financial_reports import BalanceSheetService
+        
+        return BalanceSheetService.generate(
+            company_id=self.company_id,
+            end_date=self.end_date
+        )
     
     def _get_income_statement(self) -> Dict[str, Any]:
         """Generate income statement"""
-        # TODO: Implement income statement generation
-        return {
-            "report_type": "income_statement",
-            "company_id": self.company_id,
-            "status": "not_implemented",
-        }
+        from mcp_server.financial_reports import IncomeStatementService
+        
+        return IncomeStatementService.generate(
+            company_id=self.company_id,
+            start_date=self.start_date,
+            end_date=self.end_date
+        )
+    
+    def _get_cash_flow(self) -> Dict[str, Any]:
+        """Generate cash flow statement"""
+        from mcp_server.financial_reports import CashFlowService
+        
+        return CashFlowService.generate(
+            company_id=self.company_id,
+            start_date=self.start_date,
+            end_date=self.end_date
+        )
 
 
 # Resource registry
